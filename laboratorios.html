@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Laboratorios - UNAJMA</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --blue: #1a3a5a; --bg: #f4f7f9; --red: #e53e3e; --green: #38a169; --purple: #8e44ad; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        nav { background: var(--blue); padding: 12px; text-align: center; z-index: 1000; }
+        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; }
+
+        .layout { display: flex; flex-grow: 1; overflow: hidden; }
+        .sidebar { width: 320px; background: white; border-right: 2px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
+        
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; }
+        .schedule-table { width: 100%; border-collapse: collapse; background: white; border: 2px solid #000; table-layout: fixed; }
+        .schedule-table th { background: var(--blue); color: white; padding: 8px; border: 1px solid #000; font-size: 12px; }
+        .schedule-table td { border: 1px solid #000; height: 110px; text-align: center; vertical-align: middle; padding: 5px; position: relative; }
+        .hour-cell { background: #edf2f7; font-weight: bold; width: 80px; font-size: 11px; }
+
+        /* Laboratorios Arrastrables */
+        .lab-item-drag { background: var(--purple); color: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; cursor: grab; border-left: 5px solid #4b0082; font-weight: bold; font-size: 13px; }
+        
+        .course-block { border: 2px dashed #cbd5e0; border-radius: 6px; padding: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; transition: 0.3s; }
+        .course-block.drag-over { background: #e9d8fd; border-color: var(--purple); }
+        
+        /* Indicadores de Aforo */
+        .aforo-badge { font-size: 10px; font-weight: bold; margin-top: 5px; padding: 3px 6px; border-radius: 4px; display: inline-block; }
+        .exceso { background: #fff5f5; color: var(--red); border: 1px solid var(--red); }
+        .sobra { background: #f0fff4; color: var(--green); border: 1px solid var(--green); }
+        
+        .lab-asignado { background: var(--purple); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-eliminar-lab { background: white; color: var(--red); border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; margin-left: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-action { background: var(--blue); color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="horario.html">Horarios</a>
+    <a href="vista_docente.html">Horario Docente</a>
+    <a href="laboratorios.html">Asignar Laboratorios</a>
+    <a href="vista_laboratorios.html">Vista Ocupación</a>
+</nav>
+
+<div class="layout">
+    <div class="sidebar">
+        <h3>🧪 Inventario de Labs</h3>
+        <input type="text" id="labNom" placeholder="Nombre (ej: Lab 01)" style="padding:8px; margin-bottom:5px; width:100%; box-sizing:border-box;">
+        <input type="number" id="labCap" placeholder="Capacidad PCs" style="padding:8px; margin-bottom:10px; width:100%; box-sizing:border-box;">
+        <button class="btn-action" onclick="agregarLab()">+ REGISTRAR</button>
+        <div id="listaLabs" style="flex-grow:1; overflow-y:auto; margin-top:10px;"></div>
+        <button class="btn-action" style="background:var(--green);" onclick="guardarAsignaciones()">💾 GUARDAR CAMBIOS</button>
+    </div>
+
+    <div class="main-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0; color:var(--blue);">ASIGNACIÓN POR ARRASTRE</h2>
+            <select id="selCiclo" onchange="renderHorarioConCursos()" style="padding:10px; font-weight:bold; border-radius:8px;">
+                <option value="I">Ciclo I</option><option value="II">Ciclo II</option><option value="III">Ciclo III</option>
+                <option value="IV">Ciclo IV</option><option value="V">Ciclo V</option><option value="VI">Ciclo VI</option>
+                <option value="VII">Ciclo VII</option><option value="VIII">Ciclo VIII</option><option value="IX">Ciclo IX</option>
+                <option value="X">Ciclo X</option>
+            </select>
+        </div>
+        <table class="schedule-table">
+            <thead>
+                <tr><th>HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th></tr>
+            </thead>
+            <tbody id="cuerpoLab"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", 
+        authDomain: "carga-docente.firebaseapp.com", 
+        projectId: "carga-docente", 
+        storageBucket: "carga-docente.firebasestorage.app", 
+        messagingSenderId: "994250556754", 
+        appId: "1:994250556754:web:ecabed4715e7803542e68b" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let laboratorios = [], horariosData = {}, censoSincronizado = {};
+    const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+
+    window.onload = async () => {
+        // 1. Cargar Horarios
+        const hor = await db.collection("planificacion").doc("horarios").get();
+        if(hor.exists) horariosData = hor.data().horariosGeneral || {};
+
+        // 2. Cargar Laboratorios
+        const labs = await db.collection("planificacion").doc("config_laboratorios").get();
+        if(labs.exists) laboratorios = labs.data().lista || [];
+
+        // 3. SINCRONIZACIÓN REAL CON EL CENSO DEL INDEX
+        const config = await db.collection("planificacion").doc("config_general").get();
+        if(config.exists) {
+            censoSincronizado = config.data().censoCursos || {}; // Extrae el objeto exacto de Firebase
+        }
+
+        renderListaLabs();
+        renderHorarioConCursos();
+    };
+
+    function agregarLab() {
+        const n = document.getElementById('labNom').value, c = document.getElementById('labCap').value;
+        if(!n || !c) return alert("Faltan datos");
+        laboratorios.push({ id: Date.now(), nombre: n.toUpperCase(), capacidad: parseInt(c) });
+        renderListaLabs(); renderHorarioConCursos();
+    }
+
+    function renderListaLabs() {
+        const cont = document.getElementById('listaLabs');
+        cont.innerHTML = laboratorios.map(l => `
+            <div class="lab-item-drag" draggable="true" ondragstart="iniciarArrastre(event, '${l.nombre}', ${l.capacidad})">
+                ${l.nombre} (${l.capacidad} PCs)
+            </div>
+        `).join("");
+    }
+
+    function iniciarArrastre(e, nombre, cap) { e.dataTransfer.setData("labInfo", JSON.stringify({ nombre, cap })); }
+
+    function renderHorarioConCursos() {
+        const cic = document.getElementById('selCiclo').value;
+        const cuerpo = document.getElementById('cuerpoLab');
+        const dataCiclo = horariosData[cic] || {};
+        cuerpo.innerHTML = "";
+
+        horas.forEach((h, i) => {
+            if(i === 6) cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:15px; font-weight:bold; font-size:10px;">RECESO</td></tr>`;
+            let row = `<tr><td class="hour-cell">${h}</td>`;
+            for(let d=1; d<=5; d++) {
+                const key = `${i}-${d}`;
+                const bloques = dataCiclo[key] || [];
+                
+                row += `<td ondragover="permitirDrop(event)" ondrop="soltarLab(event, ${i}, ${d})">`;
+                
+                bloques.forEach((inf, idx) => {
+                    // EXTRAE EL TOTAL EXACTO CALCULADO EN EL INDEX
+                    const censoCurso = censoSincronizado[inf.codigo] || { total: 0 };
+                    const totalAlumnos = censoCurso.total; 
+                    
+                    row += `<div class="course-block">
+                        <strong style="font-size:9px;">${inf.curso}</strong>
+                        <div style="font-size:8px; color:#666;">Alumnos: ${totalAlumnos}</div>
+                        ${inf.subTipo === "HP" ? `
+                            ${inf.lab ? `
+                                <div class="lab-asignado">
+                                    📍 ${inf.lab} 
+                                    <button class="btn-eliminar-lab" onclick="quitarAsignacion('${key}', ${idx})">✕</button>
+                                </div>
+                                ${calcularAforo(inf.lab, totalAlumnos)}
+                            ` : '<span style="color:var(--purple); font-size:9px;">Arrastra Lab aquí</span>'}
+                        ` : '<span style="color:#999; font-size:8px;">Teoría</span>'}
+                    </div>`;
+                });
+                row += `</td>`;
+            }
+            cuerpo.innerHTML += row + `</tr>`;
+        });
+    }
+
+    function calcularAforo(labNom, alumnos) {
+        const lab = laboratorios.find(l => l.nombre === labNom);
+        if(!lab) return "";
+        
+        // CÁLCULO MATEMÁTICO REAL: CAPACIDAD - TOTAL INDEX
+        const dif = parseInt(lab.capacidad) - parseInt(alumnos); 
+        
+        return `<div class="aforo-badge ${dif < 0 ? 'exceso' : 'sobra'}">
+            ${dif < 0 ? '⚠️ Faltan ' + Math.abs(dif) : '✅ Sobran ' + dif} PCs
+        </div>`;
+    }
+
+    function permitirDrop(e) { e.preventDefault(); }
+
+    function soltarLab(e, h, d) {
+        e.preventDefault();
+        const labData = JSON.parse(e.dataTransfer.getData("labInfo"));
+        const cicActual = document.getElementById('selCiclo').value;
+        const key = `${h}-${d}`;
+        if(!horariosData[cicActual][key]) return;
+
+        // Validar cruces
+        let cruce = null;
+        Object.keys(horariosData).forEach(cic => {
+            if(cic === cicActual) return;
+            if(horariosData[cic][key]?.some(b => b.lab === labData.nombre)) cruce = cic;
+        });
+
+        if(cruce) return alert(`🚫 El ${labData.nombre} está ocupado por el CICLO ${cruce}.`);
+        
+        horariosData[cicActual][key][0].lab = labData.nombre;
+        renderHorarioConCursos();
+    }
+
+    function quitarAsignacion(key, idx) {
+        const cic = document.getElementById('selCiclo').value;
+        horariosData[cic][key][idx].lab = "";
+        renderHorarioConCursos();
+    }
+
+    async function guardarAsignaciones() {
+        await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
+        await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosData, ultimaActualizacion: new Date() });
+        alert("✅ Asignaciones guardadas correctamente.");
+    }
+</script>
+</body>
+</html>

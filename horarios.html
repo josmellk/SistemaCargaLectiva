@@ -7,8 +7,15 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --blue: #1a3a5a; --bg: #f8f9fa; --border: #cbd5e0; --red: #e53e3e; --save: #2d3748; --green: #38a169; --light-blue: #3182ce; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-        .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100vh; z-index: 300; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Estilos para la nueva barra de navegación */
+        nav { background: var(--blue); padding: 12px; text-align: center; z-index: 400; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; transition: opacity 0.2s; }
+        nav a:hover { opacity: 0.8; }
+        .layout-container { display: flex; flex-grow: 1; overflow: hidden; width: 100vw; }
+
+        .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100%; z-index: 300; }
         .sidebar-header { padding: 10px; background: var(--blue); color: white; text-align: center; }
         .prelacion-nav { background: #edf2f7; padding: 10px; border-bottom: 2px solid #cbd5e0; text-align: center; }
         .docente-actual { font-size: 13px; font-weight: 800; color: var(--red); display: block; margin-bottom: 5px; text-transform: uppercase; }
@@ -18,7 +25,7 @@
         .filter-group { padding: 15px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: center; }
         #filtroCicloDocente { width: 100%; max-width: 220px; padding: 10px 15px; font-weight: 700; border: 2px solid var(--blue); border-radius: 12px; font-size: 14px; color: var(--blue); background-color: white; cursor: pointer; outline: none; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.3s ease; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a3a5a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px; }
         #filtroCicloDocente:hover { border-color: var(--light-blue); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; position: relative; overflow-y: auto; scroll-behavior: smooth; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; overflow-y: auto; scroll-behavior: smooth; }
         .schedule-container { padding: 0 20px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; }
         .header-labels { text-align: center; padding: 10px 0; position: sticky; top: 0; background: var(--bg); z-index: 250; }
         #tituloHorario { margin: 0; color: var(--blue); font-size: 20px; font-weight: 900; text-transform: uppercase; }
@@ -60,31 +67,42 @@
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-header"><h3>📅 Programación</h3></div>
-    <div class="prelacion-nav">
-        <span class="docente-actual" id="nombreDocenteActual">Cargando...</span>
-        <div style="display: flex; justify-content: space-between; gap: 5px;">
-            <button class="btn-nav" onclick="cambiarDocente(-1)">« Ant.</button>
-            <button class="btn-nav" onclick="cambiarDocente(1)" style="flex-grow:1">Siguiente</button>
-        </div>
-    </div>
-    <div class="filter-group"><select id="filtroCicloDocente" onchange="sincronizarYRender()"></select></div>
-    <div class="assigned-list" id="listaParaArrastrar"></div>
-    <button class="btn-nav" style="background:var(--save); width:100%; padding:12px; margin-top: auto;" onclick="guardarTodoPermanente()">💾 GUARDAR</button>
-</div>
+<nav>
+     <a href="horarios.html">Horarios</a>    
+    <a href="vista_docente.html">Horario Docente</a>
+    <a href="laboratorios.html">Asignar Laboratorios</a>
+    <a href="vista_laboratorios.html">Vista Ocupación</a>
+    
+</nav>
 
-<div class="main-content" id="scrollPrincipal">
-    <div class="header-labels">
-        <h2 id="tituloHorario">HORARIO</h2>
-        <div id="labelTurno">TURNO</div>
-        <div class="print-actions">
-            <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
-            <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
+<div class="layout-container">
+    <div class="sidebar">
+        <div class="sidebar-header"><h3>📅 Programación</h3></div>
+        <div class="prelacion-nav">
+            <span class="docente-actual" id="nombreDocenteActual">Cargando...</span>
+            <div style="display: flex; justify-content: space-between; gap: 5px;">
+                <button class="btn-nav" onclick="cambiarDocente(-1)">« Ant.</button>
+                <button class="btn-nav" onclick="cambiarDocente(1)" style="flex-grow:1">Siguiente</button>
+            </div>
         </div>
+        <div class="filter-group"><select id="filtroCicloDocente" onchange="sincronizarYRender()"></select></div>
+        <div class="assigned-list" id="listaParaArrastrar"></div>
+        <button class="btn-nav" style="background:var(--save); width:100%; padding:12px; margin-top: auto;" onclick="guardarTodoPermanente()">💾 GUARDAR</button>
+        
     </div>
-    <div class="schedule-container"><table class="schedule-table"><thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead><tbody id="cuerpoHorario"></tbody></table></div>
-    <div class="ciclo-pagination"><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)">❮</button><div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I</div><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)">❯</button></div>
+
+    <div class="main-content" id="scrollPrincipal">
+        <div class="header-labels">
+            <h2 id="tituloHorario">HORARIO</h2>
+            <div id="labelTurno">TURNO</div>
+            <div class="print-actions">
+                <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
+                <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
+            </div>
+        </div>
+        <div class="schedule-container"><table class="schedule-table"><thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead><tbody id="cuerpoHorario"></tbody></table></div>
+        <div class="ciclo-pagination"><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)">❮</button><div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I</div><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)">❯</button></div>
+    </div>
 </div>
 
 <div id="print-section"></div>

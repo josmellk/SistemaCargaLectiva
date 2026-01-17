@@ -56,18 +56,9 @@
         .new-cycle-row { border-top: 3px solid var(--light-blue) !important; }
 
         @media print {
-             th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
-            .ciclo-I { background-color: var(--c1) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-II { background-color: var(--c2) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-III { background-color: var(--c3) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-IV { background-color: var(--c4) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-V { background-color: var(--c5) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-VI { background-color: var(--c6) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-VII { background-color: var(--c7) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-VIII { background-color: var(--c8) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-IX { background-color: var(--c9) !important; -webkit-print-color-adjust: exact; }
-            .ciclo-X { background-color: var(--c10) !important; -webkit-print-color-adjust: exact; }
-            @page { size: A4 landscape; margin: 1cm; }
+            nav, .setup, .btn-calc, .action-btns { display: none !important; }
+            body { padding: 0; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: 100%; }
         }
     </style>
 </head>
@@ -212,7 +203,6 @@
     document.getElementById('mallaFile').addEventListener('change', e => {
         leer(e, d => { 
             malla = d; 
-            localStorage.setItem('mallaParaDocentes', JSON.stringify(malla)); 
             actualizarEstadoArchivo('Malla', true); 
         });
     });
@@ -244,6 +234,8 @@
         tbServ.innerHTML = ""; tbSist.innerHTML = ""; tbDivi.innerHTML = "";
 
         let grupos = []; let electivos = {};
+        let censoCursos = {}; // Objeto para sincronizar datos crudos a Firebase
+
         malla.forEach(c => {
             if((c["TC"]||"").trim() === "E") {
                 if(!electivos[c["CICLO"]]) electivos[c["CICLO"]] = [];
@@ -268,6 +260,22 @@
             let htSum = g.cursos.reduce((acc,c) => acc + (parseInt(c["HT"])||0), 0);
             let hpSum = g.cursos.reduce((acc,c) => acc + (parseInt(c["HP"])||0), 0);
             
+            // Sincronización individual por curso para Firebase
+            g.cursos.forEach(cur => {
+                const cod = clean(cur["CÓD.ASIG."] || "");
+                const repCurso = notas[cod] ? notas[cod].d : 0;
+                censoCursos[cod] = {
+                    ciclo: cicA,
+                    curso: cur["CURSO"],
+                    ht: parseInt(cur["HT"]) || 0,
+                    hp: parseInt(cur["HP"]) || 0,
+                    th: (parseInt(cur["HT"]) || 0) + (parseInt(cur["HP"]) || 0),
+                    base: base,
+                    rep: repCurso,
+                    total: base + repCurso
+                };
+            });
+
             let pb = "", tieneDiv = false, esFull = false;
             if (hpSum > 0 || htSum > 0) {
                 if (total > vFull) { pb = `<span class="sug-badge sug-full">DIV. COMPLETA</span>`; tieneDiv = true; esFull = true; conDivision++; }
@@ -297,8 +305,10 @@
             notasProcesadas: notas,
             avgCicloProcesado: avgCiclo,
             stats: stats,
+            censoCursos: censoCursos, // Datos detallados por curso
+            numIngresantes: nIng,
             ultimaActualizacion: new Date()
-        }).then(() => alert("✅ Planificación generada y sincronizada."));
+        }).then(() => alert("✅ Planificación y censo sincronizados."));
 
         document.getElementById('statCursos').textContent = totalCursos;
         document.getElementById('statDivisiones').textContent = conDivision;

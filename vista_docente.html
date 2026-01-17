@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Horario por Docente - UNAJMA</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        nav { background: var(--blue); padding: 12px; text-align: center; }
+        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin: 20px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: var(--blue); margin: 0; font-size: 20px; }
+
+        .view-container { background: white; margin: 20px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; border: 2px solid #000; }
+        th { background: var(--blue); color: white; padding: 12px; border: 1px solid #000; font-size: 13px; }
+        td { border: 1px solid #ddd; height: 80px; text-align: center; vertical-align: middle; padding: 5px; font-size: 11px; }
+        
+        .hour-cell { background: #edf2f7; font-weight: bold; width: 100px; border: 1px solid #000; }
+        
+        .class-block { background: #f0fff4; border: 1px solid #38a169; border-radius: 4px; padding: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+        .class-block strong { color: #2f855a; font-size: 11px; }
+        .tag-info { font-size: 9px; font-weight: bold; margin-top: 4px; color: #276749; }
+        .tag-lab { background: #e6fffa; color: #2c7a7b; padding: 2px 4px; border-radius: 3px; border: 1px solid #b2f5ea; margin-top: 3px; display: inline-block; font-weight: bold; }
+
+        .docente-selector { padding: 10px; border-radius: 8px; border: 2px solid var(--blue); font-weight: bold; width: 350px; }
+
+        @media print {
+            nav, .header, .no-print { display: none; }
+            body { background: white; }
+            .view-container { margin: 0; padding: 0; box-shadow: none; }
+            @page { size: landscape; margin: 0.5cm; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="horarios.html">Horarios</a>    
+    <a href="vista_docente.html">Horario Docente</a>
+    <a href="laboratorios.html">Asignar Laboratorios</a>
+    <a href="vista_laboratorios.html">Vista Ocupación</a>
+</nav>
+
+<div class="header">
+    <h1>👨‍🏫 HORARIO PERSONALIZADO POR DOCENTE</h1>
+    <div>
+        <select id="selectDocente" class="docente-selector" onchange="renderHorarioDocente()">
+            <option value="">-- SELECCIONE DOCENTE --</option>
+        </select>
+        <button onclick="window.print()" style="margin-left:10px; padding:10px; cursor:pointer;" class="no-print">🖨️ Imprimir Horario</button>
+    </div>
+</div>
+
+<div class="view-container">
+    <table id="tablaDocente">
+        <thead>
+            <tr>
+                <th class="hour-cell">HORA</th>
+                <th>LUNES</th>
+                <th>MARTES</th>
+                <th>MIÉRCOLES</th>
+                <th>JUEVES</th>
+                <th>VIERNES</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoDocente"></tbody>
+    </table>
+</div>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", 
+        authDomain: "carga-docente.firebaseapp.com", 
+        projectId: "carga-docente", 
+        storageBucket: "carga-docente.firebasestorage.app", 
+        messagingSenderId: "994250556754", 
+        appId: "1:994250556754:web:ecabed4715e7803542e68b" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let docentes = [], horariosData = {};
+    const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+
+    window.onload = async () => {
+        const docs = await db.collection("planificacion").doc("lista_docentes").get();
+        if(docs.exists) {
+            docentes = docs.data().docentes || [];
+            const sel = document.getElementById('selectDocente');
+            sel.innerHTML = `<option value="">-- SELECCIONE DOCENTE --</option>`;
+            docentes.forEach((d, index) => {
+                sel.innerHTML += `<option value="${d.nombre}">${index + 1}. ${d.nombre}</option>`;
+            });
+        }
+        const hor = await db.collection("planificacion").doc("horarios").get();
+        if(hor.exists) horariosData = hor.data().horariosGeneral || {};
+        renderHorarioDocente();
+    };
+
+    function renderHorarioDocente() {
+        const docenteElegido = document.getElementById('selectDocente').value;
+        const cuerpo = document.getElementById('cuerpoDocente');
+        cuerpo.innerHTML = "";
+
+        if(!docenteElegido) {
+            cuerpo.innerHTML = `<tr><td colspan="6" style="padding:40px; color:#ccc; text-align:center;">Seleccione un docente para visualizar su horario.</td></tr>`;
+            return;
+        }
+
+        horas.forEach((h, hIdx) => {
+            if(hIdx === 6) cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:15px; font-weight:bold; font-size:10px; text-align:center;">RECESO</td></tr>`;
+
+            let row = `<tr><td class="hour-cell">${h}</td>`;
+            for(let d=1; d<=5; d++) {
+                const ocupacion = buscarClaseDocente(docenteElegido, hIdx, d);
+                if(ocupacion) {
+                    // Mejora: Diferenciación dinámica entre Teoría y Práctica
+                    let infoAmbiente = "";
+                    if (ocupacion.tipo === "HP") {
+                        // Es una sesión práctica, verificar si tiene laboratorio asignado
+                        infoAmbiente = ocupacion.lab 
+                            ? `<div class="tag-lab">💻 ${ocupacion.lab}</div>` 
+                            : '<div class="tag-info" style="color:#e53e3e;">⚠️ Lab. Pendiente</div>';
+                    } else {
+                        // Es una sesión teórica
+                        infoAmbiente = '<div class="tag-info" style="color:#718096;"> Aula Teórica</div>';
+                    }
+
+                    row += `<td>
+                        <div class="class-block">
+                            <div style="font-weight:bold; font-size:9px; margin-bottom:3px; color:var(--blue);">CICLO ${ocupacion.ciclo}</div>
+                            <strong>${ocupacion.curso}</strong>
+                            <div class="tag-info">${ocupacion.tipo === 'HT' ? 'TEORÍA' : 'PRÁCTICA'}</div>
+                            ${infoAmbiente}
+                        </div>
+                    </td>`;
+                } else {
+                    row += `<td></td>`;
+                }
+            }
+            cuerpo.innerHTML += row + `</tr>`;
+        });
+    }
+
+    function buscarClaseDocente(nombreDocente, horaIdx, diaIdx) {
+        let encontrado = null;
+        const key = `${horaIdx}-${diaIdx}`;
+        Object.keys(horariosData).forEach(ciclo => {
+            const bloques = horariosData[ciclo][key];
+            if(bloques) {
+                bloques.forEach(b => {
+                    if(b.docente === nombreDocente) {
+                        encontrado = { 
+                            ciclo: ciclo, 
+                            curso: b.curso, 
+                            tipo: b.subTipo, 
+                            lab: b.lab || null 
+                        };
+                    }
+                });
+            }
+        });
+        return encontrado;
+    }
+</script>
+</body>
+</html>
