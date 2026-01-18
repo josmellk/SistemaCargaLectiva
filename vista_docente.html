@@ -6,7 +6,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; }
+        :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; --green-doc: #38a169; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
         nav { background: var(--blue); padding: 12px; text-align: center; }
@@ -19,14 +19,19 @@
         
         table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; border: 2px solid #000; }
         th { background: var(--blue); color: white; padding: 12px; border: 1px solid #000; font-size: 13px; }
-        td { border: 1px solid #ddd; height: 80px; text-align: center; vertical-align: middle; padding: 5px; font-size: 11px; }
+        td { border: 1px solid #ddd; height: 90px; text-align: center; vertical-align: middle; padding: 5px; font-size: 11px; }
         
         .hour-cell { background: #edf2f7; font-weight: bold; width: 100px; border: 1px solid #000; }
         
-        .class-block { background: #f0fff4; border: 1px solid #38a169; border-radius: 4px; padding: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-        .class-block strong { color: #2f855a; font-size: 11px; }
-        .tag-info { font-size: 9px; font-weight: bold; margin-top: 4px; color: #276749; }
-        .tag-lab { background: #e6fffa; color: #2c7a7b; padding: 2px 4px; border-radius: 3px; border: 1px solid #b2f5ea; margin-top: 3px; display: inline-block; font-weight: bold; }
+        .class-block { background: #f0fff4; border: 1px solid var(--green-doc); border-radius: 6px; padding: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; }
+        .class-block strong { color: #2f855a; font-size: 10.5px; line-height: 1.2; display: block; margin: 3px 0; }
+        
+        .tag-ciclo { font-weight: bold; font-size: 9px; color: var(--blue); margin-bottom: 2px; }
+        .tag-tipo { font-size: 9px; font-weight: bold; color: #718096; text-transform: uppercase; }
+        
+        /* Estilo para el Laboratorio Asignado */
+        .tag-lab { background: #8e44ad; color: white; padding: 3px 6px; border-radius: 4px; margin-top: 5px; display: inline-block; font-weight: bold; font-size: 10px; border: 1px solid #4b0082; }
+        .tag-pendiente { background: #fff5f5; color: #e53e3e; padding: 3px 6px; border-radius: 4px; margin-top: 5px; display: inline-block; font-size: 9px; border: 1px solid #feb2b2; font-weight: bold; }
 
         .docente-selector { padding: 10px; border-radius: 8px; border: 2px solid var(--blue); font-weight: bold; width: 350px; }
 
@@ -89,18 +94,24 @@
     const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
 
     window.onload = async () => {
+        // Cargar lista de docentes para el selector
         const docs = await db.collection("planificacion").doc("lista_docentes").get();
         if(docs.exists) {
             docentes = docs.data().docentes || [];
             const sel = document.getElementById('selectDocente');
-            sel.innerHTML = `<option value="">-- SELECCIONE DOCENTE --</option>`;
             docentes.forEach((d, index) => {
-                sel.innerHTML += `<option value="${d.nombre}">${index + 1}. ${d.nombre}</option>`;
+                const opt = document.createElement('option');
+                opt.value = d.nombre;
+                opt.textContent = `${index + 1}. ${d.nombre}`;
+                sel.appendChild(opt);
             });
         }
+        
+        // Cargar horarios generales (donde están guardados los laboratorios)
         const hor = await db.collection("planificacion").doc("horarios").get();
-        if(hor.exists) horariosData = hor.data().horariosGeneral || {};
-        renderHorarioDocente();
+        if(hor.exists) {
+            horariosData = hor.data().horariosGeneral || {};
+        }
     };
 
     function renderHorarioDocente() {
@@ -114,30 +125,33 @@
         }
 
         horas.forEach((h, hIdx) => {
-            if(hIdx === 6) cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:15px; font-weight:bold; font-size:10px; text-align:center;">RECESO</td></tr>`;
+            // Fila de Receso
+            if(hIdx === 6) {
+                cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:15px; font-weight:bold; font-size:10px; text-align:center;">RECESO</td></tr>`;
+            }
 
             let row = `<tr><td class="hour-cell">${h}</td>`;
             for(let d=1; d<=5; d++) {
                 const ocupacion = buscarClaseDocente(docenteElegido, hIdx, d);
+                
                 if(ocupacion) {
-                    // Mejora: Diferenciación dinámica entre Teoría y Práctica
-                    let infoAmbiente = "";
+                    let htmlAmbiente = "";
+                    
+                    // Lógica de visualización de Laboratorio
                     if (ocupacion.tipo === "HP") {
-                        // Es una sesión práctica, verificar si tiene laboratorio asignado
-                        infoAmbiente = ocupacion.lab 
-                            ? `<div class="tag-lab">💻 ${ocupacion.lab}</div>` 
-                            : '<div class="tag-info" style="color:#e53e3e;">⚠️ Lab. Pendiente</div>';
+                        htmlAmbiente = ocupacion.lab 
+                            ? `<div class="tag-lab">📍 ${ocupacion.lab}</div>` 
+                            : '<div class="tag-pendiente">⚠️ Sin Lab.</div>';
                     } else {
-                        // Es una sesión teórica
-                        infoAmbiente = '<div class="tag-info" style="color:#718096;"> Aula Teórica</div>';
+                        htmlAmbiente = '<div class="tag-tipo" style="color:#718096; margin-top:5px;">Aula Teórica</div>';
                     }
 
                     row += `<td>
                         <div class="class-block">
-                            <div style="font-weight:bold; font-size:9px; margin-bottom:3px; color:var(--blue);">CICLO ${ocupacion.ciclo}</div>
+                            <div class="tag-ciclo">CICLO ${ocupacion.ciclo}</div>
                             <strong>${ocupacion.curso}</strong>
-                            <div class="tag-info">${ocupacion.tipo === 'HT' ? 'TEORÍA' : 'PRÁCTICA'}</div>
-                            ${infoAmbiente}
+                            <div class="tag-tipo">${ocupacion.tipo === 'HT' ? 'TEORÍA' : 'PRÁCTICA'}</div>
+                            ${htmlAmbiente}
                         </div>
                     </td>`;
                 } else {
@@ -151,15 +165,17 @@
     function buscarClaseDocente(nombreDocente, horaIdx, diaIdx) {
         let encontrado = null;
         const key = `${horaIdx}-${diaIdx}`;
+        
+        // Recorrer todos los ciclos para encontrar las clases del docente
         Object.keys(horariosData).forEach(ciclo => {
             const bloques = horariosData[ciclo][key];
-            if(bloques) {
+            if(bloques && Array.isArray(bloques)) {
                 bloques.forEach(b => {
                     if(b.docente === nombreDocente) {
                         encontrado = { 
                             ciclo: ciclo, 
                             curso: b.curso, 
-                            tipo: b.subTipo, 
+                            tipo: b.subTipo || b.tipo, // Soporte para ambos nombres de propiedad
                             lab: b.lab || null 
                         };
                     }
