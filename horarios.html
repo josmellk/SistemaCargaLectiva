@@ -27,15 +27,11 @@
         .drag-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: grab; font-size: 11px; border-left: 8px solid #4a5568; }
         
         .save-container { padding: 15px; background: #f1f5f9; border-top: 1px solid #ddd; text-align: center; }
-        .btn-save-main { 
-            background: var(--green); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 14px; font-weight: 900; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-save-main:hover { background: #1e8449; transform: scale(1.02); }
+        .btn-save-main { background: var(--green); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 14px; font-weight: 900; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         .unsaved-warning { display: none; color: var(--red); font-size: 10px; font-weight: bold; margin-bottom: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .btn-unsaved { border: 3px solid var(--red) !important; animation: pulse-border 1.5s infinite; }
-        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); } }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; overflow-y: auto; scroll-behavior: smooth; }
         .schedule-container { padding: 0 20px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; }
@@ -46,7 +42,6 @@
         .hour-cell { background: #edf2f7; font-weight: 900; width: 100px; font-size: 12px; color: #000; }
         .diagonal-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
         .dropped-course { flex: 1; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; justify-content: center; align-items: center; text-align: center; line-height: 1.1; border-bottom: 1px dashed rgba(0,0,0,0.1); position: relative; color: #000; font-weight: bold; }
-        .dropped-course:last-child { border-bottom: none; }
         .dropped-course strong { font-size: 9px; font-weight: 900; color: #000; text-transform: uppercase; }
         .docente-name-cell { font-size: 8px; font-weight: 800; color: #333; margin-top: 1px; }
         .tag-tipo { font-size: 8px; font-weight: bold; color: white; padding: 1px 3px; border-radius: 3px; display: inline-block; }
@@ -54,8 +49,37 @@
         .tag-hp { background: #9f7aea; }
         .btn-remove { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 14px; height: 14px; cursor: pointer; font-size: 9px; z-index: 10; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         
+        .print-actions { position: absolute; top: 10px; right: 25px; display: flex; gap: 10px; z-index: 500; }
+        .btn-print-action { padding: 8px 12px; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; }
+        
         .ciclo-pagination { background: white; padding: 10px; border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; gap: 30px; position: sticky; bottom: 0; z-index: 300; }
         .btn-ciclo-nav { background: var(--blue); color: white; border: none; padding: 8px 25px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 18px; }
+
+        /* --- CONFIGURACIÓN DE IMPRESIÓN CORREGIDA --- */
+        #print-section { display: none; }
+        @media print {
+            @page { size: A4 landscape; margin: 0; }
+            html, body { height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: white !important; }
+            body > *:not(#print-section) { display: none !important; }
+            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+            .page-break { 
+                page-break-after: always; 
+                width: 100% !important; 
+                height: 100vh !important;
+                display: flex !important; 
+                flex-direction: column !important;
+                padding: 0.5cm 1cm !important; 
+                box-sizing: border-box !important;
+            }
+            .page-break:last-child { page-break-after: auto !important; }
+            .schedule-table { width: 100% !important; border: 2pt solid #000 !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            .schedule-table td { height: 2.0cm !important; border: 1pt solid #000 !important; }
+            .schedule-table th { background-color: #f2f2f2 !important; border: 1pt solid #000 !important; color: black !important; padding: 5px; font-size: 11pt; }
+            .hour-cell { background-color: #f9f9f9 !important; width: 85px !important; font-size: 10pt; }
+            h1 { font-size: 18pt !important; margin: 0 !important; text-align: center; }
+            h2 { font-size: 14pt !important; margin: 5px 0 !important; text-align: center; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
     </style>
 </head>
 <body>
@@ -76,7 +100,6 @@
                     <option value="">Seleccionar Docente...</option>
                 </select>
             </div>
-            
             <span class="docente-actual" id="nombreDocenteActual">Cargando...</span>
             <div style="display: flex; justify-content: space-between; gap: 5px;">
                 <button class="btn-nav" onclick="cambiarDocente(-1)">« Ant.</button>
@@ -87,7 +110,6 @@
             <select id="filtroCicloDocente" onchange="sincronizarYRender()" style="width:100%; padding:8px; border-radius:8px; border:2px solid var(--blue); font-weight:bold;"></select>
         </div>
         <div class="assigned-list" id="listaParaArrastrar"></div>
-        
         <div class="save-container">
             <div id="txtWarning" class="unsaved-warning">⚠️ TIENES CAMBIOS SIN GUARDAR</div>
             <button id="btnGuardar" class="btn-save-main" onclick="guardarTodoPermanente()">💾 GUARDAR HORARIO</button>
@@ -95,9 +117,13 @@
     </div>
 
     <div class="main-content" id="scrollPrincipal">
-        <div style="text-align:center; padding:10px;">
+        <div style="text-align:center; padding:10px; position: relative;">
             <h2 id="tituloHorario" style="margin:0;">HORARIO</h2>
             <div id="labelTurno" style="padding:4px 20px; border-radius:15px; color:white; font-weight:bold; display:inline-block; font-size:12px; margin-top:5px;">TURNO</div>
+            <div class="print-actions">
+                <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
+                <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
+            </div>
         </div>
         <div class="schedule-container">
             <table class="schedule-table">
@@ -113,51 +139,34 @@
     </div>
 </div>
 
+<div id="print-section"></div>
+
 <script>
-    const firebaseConfig = { 
-        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     let malla = [], docentes = [], horariosPorCiclo = {}, ROMANOS = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
     const hMañana = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00"], hTarde = ["14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
-    let indiceDocenteActual = 0, indiceCicloGeneral = 0;
-    let cambiosPendientes = false;
+    let indiceDocenteActual = 0, indiceCicloGeneral = 0, cambiosPendientes = false;
 
-    // Monitor de cambios
-    function registrarCambio() {
-        cambiosPendientes = true;
-        document.getElementById('txtWarning').style.display = 'block';
-        document.getElementById('btnGuardar').classList.add('btn-unsaved');
-    }
+    function registrarCambio() { cambiosPendientes = true; document.getElementById('txtWarning').style.display = 'block'; document.getElementById('btnGuardar').classList.add('btn-unsaved'); }
 
-    // GUARDIÁN DE NAVEGACIÓN
     document.addEventListener('click', function(e) {
         if (e.target.tagName === 'A' && e.target.closest('#mainNav')) {
             if (cambiosPendientes) {
-                e.preventDefault(); // Detiene el cambio de página
-                const url = e.target.href;
-                if (confirm("⚠️ Tienes cambios sin guardar.\n\nPresiona 'ACEPTAR' para quedarte y guardar.\nPresiona 'CANCELAR' para salir sin guardar.")) {
-                    // Se queda en la página
-                } else {
-                    cambiosPendientes = false; // Desactiva la alerta para permitir la salida
-                    window.location.href = url;
-                }
+                e.preventDefault();
+                if (!confirm("⚠️ Tienes cambios sin guardar. ¿Deseas salir de todas formas?")) return;
+                cambiosPendientes = false; window.location.href = e.target.href;
             }
         }
     });
-
-    window.onbeforeunload = function() {
-        if (cambiosPendientes) return "Tienes cambios sin guardar. ¿Deseas salir?";
-    };
 
     function getColorPorDocente(nombre) {
         if(!nombre) return "#FFFFFF";
         let hash = 0;
         for (let i = 0; i < nombre.length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
-        const hue = Math.abs(hash % 360);
-        return `hsl(${hue}, 75%, 85%)`;
+        return `hsl(${Math.abs(hash % 360)}, 75%, 85%)`;
     }
 
     window.onload = async () => {
@@ -166,11 +175,7 @@
         const docs = await db.collection("planificacion").doc("lista_docentes").get();
         if(docs.exists) docentes = docs.data().docentes || [];
         const hor = await db.collection("planificacion").doc("horarios").get();
-        if(hor.exists) { 
-            horariosPorCiclo = hor.data().horariosGeneral || {}; 
-            indiceDocenteActual = 0; 
-            indiceCicloGeneral = hor.data().savedCicloIdx || 0; 
-        }
+        if(hor.exists) { horariosPorCiclo = hor.data().horariosGeneral || {}; indiceDocenteActual = 0; indiceCicloGeneral = hor.data().savedCicloIdx || 0; }
         poblarSelectorDocentes();
         if(docentes.length > 0) actualizarTurnoDocente(); 
     };
@@ -178,19 +183,10 @@
     function poblarSelectorDocentes() {
         const select = document.getElementById('selectDirectoDocente');
         select.innerHTML = '<option value="">Ir a docente...</option>';
-        docentes.forEach((d, idx) => {
-            const opt = document.createElement('option');
-            opt.value = idx;
-            opt.innerText = `${idx + 1}. ${d.nombre}`;
-            select.appendChild(opt);
-        });
+        docentes.forEach((d, idx) => { select.innerHTML += `<option value="${idx}">${idx + 1}. ${d.nombre}</option>`; });
     }
 
-    function irADocenteEspecifico(idx) {
-        if(idx === "") return;
-        indiceDocenteActual = parseInt(idx);
-        actualizarTurnoDocente();
-    }
+    function irADocenteEspecifico(idx) { if(idx === "") return; indiceDocenteActual = parseInt(idx); actualizarTurnoDocente(); }
 
     function actualizarInterfazCiclo() {
         const cic = ROMANOS[indiceCicloGeneral], esM = (indiceCicloGeneral % 2 === 0);
@@ -200,13 +196,9 @@
         lb.innerText = esM ? "TURNO: MAÑANA" : "TURNO: TARDE";
         lb.style.backgroundColor = esM ? "#3182ce" : "#dd6b20";
         cargarHorarioCiclo();
-        
         const scroll = document.getElementById('scrollPrincipal');
-        if (!esM) {
-            setTimeout(() => scroll.scrollTo({ top: 800, behavior: 'smooth' }), 100);
-        } else {
-            scroll.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        if (!esM) setTimeout(() => scroll.scrollTo({ top: 800, behavior: 'smooth' }), 100);
+        else scroll.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function generarTablaBase() {
@@ -223,8 +215,7 @@
         Object.keys(data).forEach(k => { 
             const cont = document.getElementById(`cell-${k}`); 
             if(cont) data[k].forEach((inf, idx) => { 
-                const b = document.createElement('div'); 
-                b.className = 'dropped-course'; 
+                const b = document.createElement('div'); b.className = 'dropped-course'; 
                 b.style.backgroundColor = getColorPorDocente(inf.docente); 
                 b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; 
                 cont.appendChild(b); 
@@ -237,54 +228,35 @@
     function cambiarDocente(dir) { indiceDocenteActual = Math.max(0, Math.min(docentes.length - 1, indiceDocenteActual + dir)); actualizarTurnoDocente(); }
     
     function actualizarTurnoDocente() { 
-        const doc = docentes[indiceDocenteActual]; 
-        if(!doc) return; 
+        const doc = docentes[indiceDocenteActual]; if(!doc) return; 
         document.getElementById('selectDirectoDocente').value = indiceDocenteActual;
         document.getElementById('nombreDocenteActual').innerText = `${indiceDocenteActual + 1}. ${doc.nombre}`; 
-        const select = document.getElementById('filtroCicloDocente'); 
-        select.innerHTML = ""; 
+        const select = document.getElementById('filtroCicloDocente'); select.innerHTML = ""; 
         let ciclosSet = new Set(); 
-        doc.carga.forEach(item => { 
-            const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); 
-            if(cM) ciclosSet.add(cM["CICLO"].toString().trim()); 
-        }); 
+        doc.carga.forEach(item => { const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); if(cM) ciclosSet.add(cM["CICLO"].toString().trim()); }); 
         Array.from(ciclosSet).sort((a,b) => ROMANOS.indexOf(a) - ROMANOS.indexOf(b)).forEach(c => select.innerHTML += `<option value="${c}">Ciclo ${c}</option>`); 
-        if (ciclosSet.size > 0) { 
-            select.value = ROMANOS[indiceCicloGeneral] || Array.from(ciclosSet)[0]; 
-            sincronizarYRender(); 
-        } else { 
-            actualizarInterfazCiclo(); renderCursosAsignados(); 
-        } 
+        if (ciclosSet.size > 0) { select.value = ROMANOS[indiceCicloGeneral] || Array.from(ciclosSet)[0]; sincronizarYRender(); } 
+        else { actualizarInterfazCiclo(); renderCursosAsignados(); } 
     }
 
     function drop(e, f, d) { 
-        e.preventDefault(); 
-        const info = JSON.parse(e.dataTransfer.getData("info")), cic = ROMANOS[indiceCicloGeneral], key = `${f}-${d}`; 
-        let conf = null; 
-        Object.keys(horariosPorCiclo).forEach(c => { if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c; }); 
-        if(conf) return alert("Cruce de docente en Ciclo "+conf); 
-        if(!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {}; 
-        if(!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = []; 
+        e.preventDefault(); const info = JSON.parse(e.dataTransfer.getData("info")), cic = ROMANOS[indiceCicloGeneral], key = `${f}-${d}`; 
+        let conf = null; Object.keys(horariosPorCiclo).forEach(c => { if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c; }); 
+        if(conf) return alert("Cruce en Ciclo "+conf); 
+        if(!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {}; if(!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = []; 
         if(horariosPorCiclo[cic][key].length >= 2) return alert("Celda llena"); 
-        
-        horariosPorCiclo[cic][key].push(info); 
-        registrarCambio(); 
-        cargarHorarioCiclo(); renderCursosAsignados(); 
+        horariosPorCiclo[cic][key].push(info); registrarCambio(); cargarHorarioCiclo(); renderCursosAsignados(); 
     }
 
     function allowDrop(e) { e.preventDefault(); }
-    
     function renderCursosAsignados() { 
-        const container = document.getElementById('listaParaArrastrar'); 
-        container.innerHTML = ""; 
-        const doc = docentes[indiceDocenteActual], cicFil = document.getElementById('filtroCicloDocente').value; 
-        if(!doc) return; 
+        const container = document.getElementById('listaParaArrastrar'); container.innerHTML = ""; 
+        const doc = docentes[indiceDocenteActual], cicFil = document.getElementById('filtroCicloDocente').value; if(!doc) return; 
         const colDocente = getColorPorDocente(doc.nombre);
         doc.carga.forEach(item => { 
             const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim()); 
             if(cM && cM["CICLO"] === cicFil) { 
-                const htR = (parseInt(cM["HT"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HT'), 
-                      hpR = (parseInt(cM["HP"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HP'); 
+                const htR = (parseInt(cM["HT"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HT'), hpR = (parseInt(cM["HP"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HP'); 
                 if (item.tipo === 'FULL' && htR > 0) crearItemArrastre(container, item, doc.nombre, 'HT', htR, colDocente); 
                 if (hpR > 0) crearItemArrastre(container, item, doc.nombre, 'HP', hpR, colDocente); 
             } 
@@ -293,31 +265,69 @@
 
     function contarHorasUsadas(c, d, s) { let count = 0; Object.values(horariosPorCiclo).forEach(ciclo => { Object.values(ciclo).forEach(sl => { sl.forEach(b => { if(b.codigo.trim() === c.trim() && b.docente === d && b.subTipo === s) count++; }); }); }); return count; }
     function crearItemArrastre(cont, it, doc, tip, res, col) { 
-        const d = document.createElement('div'); 
-        d.className = 'drag-item'; 
-        d.style.borderLeftColor = col; 
-        d.draggable = true; 
+        const d = document.createElement('div'); d.className = 'drag-item'; d.style.borderLeftColor = col; d.draggable = true; 
         d.innerHTML = `<span style="background:${tip==='HT'?'#ed8936':'#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span> <strong>${res}h</strong> ${it.nombre}`; 
         d.ondragstart = (e) => { e.dataTransfer.setData("info", JSON.stringify({ curso: it.nombre, docente: doc, codigo: it.codigo, subTipo: tip })); }; 
         cont.appendChild(d); 
     }
 
-    function quitar(k, i) { 
-        horariosPorCiclo[ROMANOS[indiceCicloGeneral]][k].splice(i, 1); 
-        registrarCambio(); 
-        cargarHorarioCiclo(); renderCursosAsignados(); 
-    }
-
+    function quitar(k, i) { horariosPorCiclo[ROMANOS[indiceCicloGeneral]][k].splice(i, 1); registrarCambio(); cargarHorarioCiclo(); renderCursosAsignados(); }
     async function guardarTodoPermanente() { 
         try { 
-            await db.collection("planificacion").doc("horarios").set({ 
-                horariosGeneral: horariosPorCiclo, savedDocenteIdx: indiceDocenteActual, savedCicloIdx: indiceCicloGeneral, ultimaActualizacion: new Date() 
-            }); 
-            cambiosPendientes = false;
-            document.getElementById('txtWarning').style.display = 'none';
-            document.getElementById('btnGuardar').classList.remove('btn-unsaved');
-            alert("✅ Horario guardado."); 
+            await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosPorCiclo, savedDocenteIdx: 0, savedCicloIdx: indiceCicloGeneral, ultimaActualizacion: new Date() }); 
+            cambiosPendientes = false; document.getElementById('txtWarning').style.display = 'none'; document.getElementById('btnGuardar').classList.remove('btn-unsaved'); alert("✅ Guardado."); 
         } catch(e) { alert("❌ Error."); } 
+    }
+
+    function imprimirSoloVistaActual() {
+        const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}, printContainer = document.getElementById('print-section');
+        printContainer.innerHTML = ""; 
+        let hayM = false, hayT = false;
+        for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
+        for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
+        
+        if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
+        if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
+        
+        if(!hayM && !hayT) {
+            const esM = (indiceCicloGeneral % 2 === 0);
+            generarPaginaTurno(printContainer, cic, esM ? "MAÑANA" : "TARDE", esM ? hMañana : hTarde, esM ? 0 : 6);
+        }
+        setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+    }
+
+    function imprimirTodosLosCiclos() {
+        const printContainer = document.getElementById('print-section');
+        printContainer.innerHTML = "";
+        ROMANOS.forEach((cic) => {
+            const data = horariosPorCiclo[cic] || {};
+            let hayM = false, hayT = false;
+            for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
+            for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
+            if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
+            if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
+        });
+        setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+    }
+
+    function generarPaginaTurno(contenedor, ciclo, nombreTurno, horasTurno, offset) {
+        const dataCiclo = horariosPorCiclo[ciclo] || {};
+        let html = `<div class="page-break">
+            <h1>HORARIO ACADÉMICO - CICLO ${ciclo}</h1>
+            <h2>TURNO: ${nombreTurno}</h2>
+            <table class="schedule-table">
+                <thead><tr><th style="width:85px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead>
+                <tbody>`;
+        horasTurno.forEach((h, idx) => {
+            const realIdx = idx + offset; html += `<tr><td class="hour-cell">${h}</td>`;
+            for (let dia = 1; dia <= 5; dia++) {
+                const key = `${realIdx}-${dia}`, bloques = dataCiclo[key] || [];
+                html += `<td><div class="diagonal-container">` + bloques.map(inf => `<div class="dropped-course" style="background-color:${getColorPorDocente(inf.docente)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span></div>`).join("") + `</div></td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+        contenedor.innerHTML += html;
     }
 </script>
 </body>
