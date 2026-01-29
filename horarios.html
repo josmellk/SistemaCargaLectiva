@@ -9,7 +9,6 @@
         :root { --blue: #1a3a5a; --bg: #f8f9fa; --border: #cbd5e0; --red: #e53e3e; --save: #2d3748; --green: #38a169; --light-blue: #3182ce; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Estilos para la nueva barra de navegación */
         nav { background: var(--blue); padding: 12px; text-align: center; z-index: 400; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; transition: opacity 0.2s; }
         nav a:hover { opacity: 0.8; }
@@ -21,37 +20,28 @@
         .docente-actual { font-size: 13px; font-weight: 800; color: var(--red); display: block; margin-bottom: 5px; text-transform: uppercase; }
         .btn-nav { padding: 5px 12px; cursor: pointer; background: var(--blue); color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .assigned-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
-        .drag-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: grab; font-size: 11px; border-left: 5px solid #4a5568; }
-        .filter-group { padding: 15px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: center; }
-        #filtroCicloDocente { width: 100%; max-width: 220px; padding: 10px 15px; font-weight: 700; border: 2px solid var(--blue); border-radius: 12px; font-size: 14px; color: var(--blue); background-color: white; cursor: pointer; outline: none; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.3s ease; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a3a5a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px; }
-        #filtroCicloDocente:hover { border-color: var(--light-blue); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .drag-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: grab; font-size: 11px; border-left: 8px solid #4a5568; }
+        
         .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; overflow-y: auto; scroll-behavior: smooth; }
         .schedule-container { padding: 0 20px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; }
-        .header-labels { text-align: center; padding: 10px 0; position: sticky; top: 0; background: var(--bg); z-index: 250; }
-        #tituloHorario { margin: 0; color: var(--blue); font-size: 20px; font-weight: 900; text-transform: uppercase; }
-        #labelTurno { display: inline-block; margin-top: 2px; padding: 5px 25px; border-radius: 20px; font-weight: 900; font-size: 13px; color: white; text-transform: uppercase; }
-        .turno-manana { background-color: #3182ce; }
-        .turno-tarde { background-color: #dd6b20; }
-        .print-actions { position: absolute; top: 10px; right: 25px; display: flex; gap: 10px; }
-        .btn-print-action { padding: 8px 12px; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; }
         .schedule-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; border: 2px solid #000; }
         .schedule-table th { background: var(--blue); color: white; padding: 8px; border: 1px solid #000; font-size: 13px; }
-        .schedule-table td { border: 1px solid #000; height: calc((100vh - 180px) / 6); text-align: center; position: relative; padding: 0; }
+        .schedule-table td { border: 1px solid #000; height: calc((100vh - 180px) / 6.5); text-align: center; position: relative; padding: 0; }
+        
         .hour-cell { background: #edf2f7; font-weight: 900; width: 100px; font-size: 12px; color: #000; }
-        .turno-extra { background-color: #f2f2f2 !important; }
-        .fila-receso { background-color: #cbd5e0 !important; color: #1a3a5a; font-weight: 900; font-size: 13px; height: 30px !important; }
         .diagonal-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
-        .dropped-course { flex: 1; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; justify-content: center; align-items: center; text-align: center; line-height: 1.1; border-bottom: 1px dashed rgba(0,0,0,0.1); position: relative; }
-        .dropped-course:last-child { border-bottom: none; }
+        .dropped-course { flex: 1; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; justify-content: center; align-items: center; text-align: center; line-height: 1.1; border-bottom: 1px dashed rgba(0,0,0,0.1); position: relative; color: #000; font-weight: bold; }
         .dropped-course strong { font-size: 9px; font-weight: 900; color: #000; text-transform: uppercase; }
         .docente-name-cell { font-size: 8px; font-weight: 800; color: #333; margin-top: 1px; }
-        .tag-tipo { font-size: 8px; font-weight: bold; color: white; padding: 1px 3px; border-radius: 3px; display: inline-block; margin-top: 2px; }
+        .tag-tipo { font-size: 8px; font-weight: bold; color: white; padding: 1px 3px; border-radius: 3px; display: inline-block; }
         .tag-ht { background: #ed8936; }
         .tag-hp { background: #9f7aea; }
-        .btn-remove { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; cursor: pointer; font-size: 10px; z-index: 100; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-remove { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 14px; height: 14px; cursor: pointer; font-size: 9px; z-index: 10; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        
         .ciclo-pagination { background: white; padding: 10px; border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; gap: 30px; position: sticky; bottom: 0; z-index: 300; }
         .btn-ciclo-nav { background: var(--blue); color: white; border: none; padding: 8px 25px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 18px; }
         #print-section { display: none; }
+
         @media print {
             @page { size: landscape; margin: 0.5cm; }
             body * { visibility: hidden; }
@@ -68,11 +58,10 @@
 <body>
 
 <nav>
-     <a href="horarios.html">Horarios</a>    
+    <a href="horarios.html">Horarios</a>    
     <a href="vista_docente.html">Horario Docente</a>
     <a href="laboratorios.html">Asignar Laboratorios</a>
     <a href="vista_laboratorios.html">Vista Ocupación</a>
-    
 </nav>
 
 <div class="layout-container">
@@ -85,37 +74,37 @@
                 <button class="btn-nav" onclick="cambiarDocente(1)" style="flex-grow:1">Siguiente</button>
             </div>
         </div>
-        <div class="filter-group"><select id="filtroCicloDocente" onchange="sincronizarYRender()"></select></div>
+        <div class="filter-group" style="padding: 10px;">
+            <select id="filtroCicloDocente" onchange="sincronizarYRender()" style="width:100%; padding:8px; border-radius:8px; border:2px solid var(--blue); font-weight:bold;"></select>
+        </div>
         <div class="assigned-list" id="listaParaArrastrar"></div>
         <button class="btn-nav" style="background:var(--save); width:100%; padding:12px; margin-top: auto;" onclick="guardarTodoPermanente()">💾 GUARDAR</button>
-        
     </div>
 
     <div class="main-content" id="scrollPrincipal">
-        <div class="header-labels">
-            <h2 id="tituloHorario">HORARIO</h2>
-            <div id="labelTurno">TURNO</div>
-            <div class="print-actions">
-                <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
-                <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
-            </div>
+        <div style="text-align:center; padding:10px;">
+            <h2 id="tituloHorario" style="margin:0;">HORARIO</h2>
+            <div id="labelTurno" style="padding:4px 20px; border-radius:15px; color:white; font-weight:bold; display:inline-block; font-size:12px; margin-top:5px;">TURNO</div>
         </div>
-        <div class="schedule-container"><table class="schedule-table"><thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead><tbody id="cuerpoHorario"></tbody></table></div>
-        <div class="ciclo-pagination"><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)">❮</button><div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I</div><button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)">❯</button></div>
+        <div class="schedule-container">
+            <table class="schedule-table">
+                <thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead>
+                <tbody id="cuerpoHorario"></tbody>
+            </table>
+        </div>
+        <div class="ciclo-pagination">
+            <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)">❮</button>
+            <div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I</div>
+            <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)">❯</button>
+        </div>
     </div>
 </div>
 
 <div id="print-section"></div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc",
-        authDomain: "carga-docente.firebaseapp.com",
-        projectId: "carga-docente",
-        storageBucket: "carga-docente.firebasestorage.app",
-        messagingSenderId: "994250556754",
-        appId: "1:994250556754:web:ecabed4715e7803542e68b",
-        measurementId: "G-YCBK251ESS"
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -124,91 +113,140 @@
     const hMañana = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00"], hTarde = ["14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
     let indiceDocenteActual = 0, indiceCicloGeneral = 0;
 
+    function getColorPorDocente(nombre) {
+        if(!nombre) return "#FFFFFF";
+        let hash = 0;
+        for (let i = 0; i < nombre.length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+        const hue = Math.abs(hash % 360);
+        return `hsl(${hue}, 75%, 85%)`;
+    }
+
     window.onload = async () => {
         const config = await db.collection("planificacion").doc("config_general").get();
         if(config.exists) malla = config.data().mallaParaDocentes || [];
+        
         const docs = await db.collection("planificacion").doc("lista_docentes").get();
         if(docs.exists) docentes = docs.data().docentes || [];
+        
         const hor = await db.collection("planificacion").doc("horarios").get();
-        if(hor.exists) { horariosPorCiclo = hor.data().horariosGeneral || {}; indiceDocenteActual = hor.data().savedDocenteIdx || 0; indiceCicloGeneral = hor.data().savedCicloIdx || 0; }
+        if(hor.exists) { 
+            horariosPorCiclo = hor.data().horariosGeneral || {}; 
+            // CORRECCIÓN: Siempre forzamos a 0 para que empiece en el Docente 1
+            indiceDocenteActual = 0; 
+            indiceCicloGeneral = hor.data().savedCicloIdx || 0; 
+        }
+        
         if(docentes.length > 0) actualizarTurnoDocente(); 
     };
-
-    function imprimirSoloVistaActual() {
-        const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}, printContainer = document.getElementById('print-section');
-        printContainer.innerHTML = ""; 
-        let hayM = false, hayT = false;
-        for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-        for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
-        const esM_Oficial = (indiceCicloGeneral % 2 === 0);
-        if(!hayM && !hayT) { if(esM_Oficial) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0); else generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6); }
-        else { if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0); if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6); }
-        window.print();
-        setTimeout(() => { printContainer.innerHTML = ""; }, 1000);
-    }
-
-    function imprimirTodosLosCiclos() {
-        const printContainer = document.getElementById('print-section');
-        printContainer.innerHTML = "";
-        ROMANOS.forEach((cic) => {
-            const data = horariosPorCiclo[cic] || {};
-            let hayM = false, hayT = false;
-            for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-            for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
-            if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
-            if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
-        });
-        window.print();
-    }
-
-    function generarPaginaTurno(contenedor, ciclo, nombreTurno, horasTurno, offset) {
-        const dataCiclo = horariosPorCiclo[ciclo] || {};
-        let html = `<div class="page-break"><h1 style="text-align:center; margin:0; font-size:18pt;">HORARIO ACADÉMICO - CICLO ${ciclo}</h1><h2 style="text-align:center; margin:5px 0; font-size:14pt;">TURNO: ${nombreTurno}</h2><table class="schedule-table"><thead><tr><th style="width:100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead><tbody>`;
-        horasTurno.forEach((h, idx) => {
-            const realIdx = idx + offset;
-            html += `<tr><td class="hour-cell">${h}</td>`;
-            for (let dia = 1; dia <= 5; dia++) {
-                const key = `${realIdx}-${dia}`, bloques = dataCiclo[key] || [];
-                html += `<td><div class="diagonal-container">` + bloques.map(inf => `<div class="dropped-course" style="background-color:${inf.color}"><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span></div>`).join("") + `</div></td>`;
-            }
-            html += `</tr>`;
-        });
-        contenedor.innerHTML += html + `</tbody></table></div>`;
-    }
 
     function actualizarInterfazCiclo() {
         const cic = ROMANOS[indiceCicloGeneral], esM = (indiceCicloGeneral % 2 === 0);
         document.getElementById('cicloActualDisplay').innerText = `CICLO ${cic}`;
         document.getElementById('tituloHorario').innerText = `HORARIO ACADÉMICO - CICLO ${cic}`;
         const lb = document.getElementById('labelTurno');
-        lb.innerText = esM ? "TURNO OFICIAL: MAÑANA" : "TURNO OFICIAL: TARDE";
-        lb.className = esM ? "turno-manana" : "turno-tarde";
+        lb.innerText = esM ? "TURNO: MAÑANA" : "TURNO: TARDE";
+        lb.style.backgroundColor = esM ? "#3182ce" : "#dd6b20";
         cargarHorarioCiclo();
+        
         const scroll = document.getElementById('scrollPrincipal');
-        if (!esM) setTimeout(() => scroll.scrollTop = 600, 50); else scroll.scrollTop = 0;
+        if (!esM) {
+            setTimeout(() => scroll.scrollTo({ top: 800, behavior: 'smooth' }), 100);
+        } else {
+            scroll.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     }
 
     function generarTablaBase() {
         const cuerpo = document.getElementById('cuerpoHorario'), esM = (indiceCicloGeneral % 2 === 0);
         cuerpo.innerHTML = "";
-        hMañana.forEach((h, i) => { cuerpo.innerHTML += `<tr id="fila-${i}" class="${!esM?'turno-extra':''}"><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("") + `</tr>`; });
-        cuerpo.innerHTML += `<tr id="fila-receso"><td colspan="6" class="fila-receso">RECESO / ALMUERZO</td></tr>`;
-        hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr id="fila-${rI}" class="${esM?'turno-extra':''}"><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
+        hMañana.forEach((h, i) => { cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("") + `</tr>`; });
+        cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; font-weight:bold; height:25px; font-size:11px; text-align:center;">RECESO</td></tr>`;
+        hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
     }
 
-    function cargarHorarioCiclo() { generarTablaBase(); const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}; Object.keys(data).forEach(k => { const cont = document.getElementById(`cell-${k}`); if(cont) data[k].forEach((inf, idx) => { const b = document.createElement('div'); b.className = 'dropped-course'; b.style.backgroundColor = inf.color; b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; cont.appendChild(b); }); }); }
+    function cargarHorarioCiclo() { 
+        generarTablaBase(); 
+        const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}; 
+        Object.keys(data).forEach(k => { 
+            const cont = document.getElementById(`cell-${k}`); 
+            if(cont) data[k].forEach((inf, idx) => { 
+                const b = document.createElement('div'); 
+                b.className = 'dropped-course'; 
+                b.style.backgroundColor = getColorPorDocente(inf.docente); 
+                b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; 
+                cont.appendChild(b); 
+            }); 
+        }); 
+    }
+
     function navegarCicloGeneral(dir) { indiceCicloGeneral = Math.max(0, Math.min(9, indiceCicloGeneral + dir)); actualizarInterfazCiclo(); renderCursosAsignados(); }
     function sincronizarYRender() { const sel = document.getElementById('filtroCicloDocente').value; if(sel) { indiceCicloGeneral = ROMANOS.indexOf(sel); actualizarInterfazCiclo(); } renderCursosAsignados(); }
     function cambiarDocente(dir) { indiceDocenteActual = Math.max(0, Math.min(docentes.length - 1, indiceDocenteActual + dir)); actualizarTurnoDocente(); }
-    function actualizarTurnoDocente() { const doc = docentes[indiceDocenteActual]; if(!doc) return; document.getElementById('nombreDocenteActual').innerText = `${indiceDocenteActual + 1}. ${doc.nombre}`; const select = document.getElementById('filtroCicloDocente'); select.innerHTML = ""; let ciclosSet = new Set(); doc.carga.forEach(item => { const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); if(cM) ciclosSet.add(cM["CICLO"].toString().trim()); }); Array.from(ciclosSet).sort((a,b) => ROMANOS.indexOf(a) - ROMANOS.indexOf(b)).forEach(c => select.innerHTML += `<option value="${c}">Ciclo ${c}</option>`); if (ciclosSet.size > 0) { select.value = ROMANOS[indiceCicloGeneral] || Array.from(ciclosSet)[0]; sincronizarYRender(); } else { actualizarInterfazCiclo(); renderCursosAsignados(); } }
-    function drop(e, f, d) { e.preventDefault(); const info = JSON.parse(e.dataTransfer.getData("info")), cic = ROMANOS[indiceCicloGeneral], key = `${f}-${d}`; let conf = null; Object.keys(horariosPorCiclo).forEach(c => { if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c; }); if(conf) return alert("Cruce en Ciclo "+conf); if(!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {}; if(!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = []; if(horariosPorCiclo[cic][key].length >= 2) return alert("Celda llena"); horariosPorCiclo[cic][key].push(info); cargarHorarioCiclo(); renderCursosAsignados(); }
+    
+    function actualizarTurnoDocente() { 
+        const doc = docentes[indiceDocenteActual]; 
+        if(!doc) return; 
+        document.getElementById('nombreDocenteActual').innerText = `${indiceDocenteActual + 1}. ${doc.nombre}`; 
+        const select = document.getElementById('filtroCicloDocente'); 
+        select.innerHTML = ""; 
+        let ciclosSet = new Set(); 
+        doc.carga.forEach(item => { 
+            const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); 
+            if(cM) ciclosSet.add(cM["CICLO"].toString().trim()); 
+        }); 
+        Array.from(ciclosSet).sort((a,b) => ROMANOS.indexOf(a) - ROMANOS.indexOf(b)).forEach(c => select.innerHTML += `<option value="${c}">Ciclo ${c}</option>`); 
+        if (ciclosSet.size > 0) { 
+            select.value = ROMANOS[indiceCicloGeneral] || Array.from(ciclosSet)[0]; 
+            sincronizarYRender(); 
+        } else { 
+            actualizarInterfazCiclo(); renderCursosAsignados(); 
+        } 
+    }
+
+    function drop(e, f, d) { 
+        e.preventDefault(); 
+        const info = JSON.parse(e.dataTransfer.getData("info")), cic = ROMANOS[indiceCicloGeneral], key = `${f}-${d}`; 
+        let conf = null; 
+        Object.keys(horariosPorCiclo).forEach(c => { if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c; }); 
+        if(conf) return alert("Cruce de docente en Ciclo "+conf); 
+        if(!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {}; 
+        if(!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = []; 
+        if(horariosPorCiclo[cic][key].length >= 2) return alert("Celda llena"); 
+        horariosPorCiclo[cic][key].push(info); 
+        cargarHorarioCiclo(); renderCursosAsignados(); 
+    }
+
     function allowDrop(e) { e.preventDefault(); }
-    function renderCursosAsignados() { const container = document.getElementById('listaParaArrastrar'); container.innerHTML = ""; const doc = docentes[indiceDocenteActual], cicFil = document.getElementById('filtroCicloDocente').value; if(!doc) return; doc.carga.forEach(item => { const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim()); if(cM && cM["CICLO"] === cicFil) { const color = stringToColor(doc.nombre), htR = (parseInt(cM["HT"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HT'), hpR = (parseInt(cM["HP"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HP'); if (htR > 0) crearItemArrastre(container, item, doc.nombre, 'HT', htR, color); if (hpR > 0) crearItemArrastre(container, item, doc.nombre, 'HP', hpR, color); } }); }
+    function renderCursosAsignados() { 
+        const container = document.getElementById('listaParaArrastrar'); 
+        container.innerHTML = ""; 
+        const doc = docentes[indiceDocenteActual], cicFil = document.getElementById('filtroCicloDocente').value; 
+        if(!doc) return; 
+        const colDocente = getColorPorDocente(doc.nombre);
+        doc.carga.forEach(item => { 
+            const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim()); 
+            if(cM && cM["CICLO"] === cicFil) { 
+                const htR = (parseInt(cM["HT"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HT'), 
+                      hpR = (parseInt(cM["HP"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HP'); 
+                if (htR > 0) crearItemArrastre(container, item, doc.nombre, 'HT', htR, colDocente); 
+                if (hpR > 0) crearItemArrastre(container, item, doc.nombre, 'HP', hpR, colDocente); 
+            } 
+        }); 
+    }
+
     function contarHorasUsadas(c, d, s) { let count = 0; Object.values(horariosPorCiclo).forEach(ciclo => { Object.values(ciclo).forEach(sl => { sl.forEach(b => { if(b.codigo.trim() === c.trim() && b.docente === d && b.subTipo === s) count++; }); }); }); return count; }
-    function crearItemArrastre(cont, it, doc, tip, res, col) { const d = document.createElement('div'); d.className = 'drag-item'; d.style.borderLeftColor = col; d.draggable = true; d.innerHTML = `<span style="background:${tip==='HT'?'#ed8936':'#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span> <strong>${res}h</strong> ${it.nombre}`; d.ondragstart = (e) => { e.dataTransfer.setData("info", JSON.stringify({ curso: it.nombre, docente: doc, codigo: it.codigo, subTipo: tip, color: col })); }; cont.appendChild(d); }
-    function stringToColor(str) { let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 7) - hash); const hue = Math.abs(hash * 137.5) % 360; return `hsl(${hue}, 80%, 85%)`; }
+    function crearItemArrastre(cont, it, doc, tip, res, col) { 
+        const d = document.createElement('div'); 
+        d.className = 'drag-item'; 
+        d.style.borderLeftColor = col; 
+        d.draggable = true; 
+        d.innerHTML = `<span style="background:${tip==='HT'?'#ed8936':'#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span> <strong>${res}h</strong> ${it.nombre}`; 
+        d.ondragstart = (e) => { e.dataTransfer.setData("info", JSON.stringify({ curso: it.nombre, docente: doc, codigo: it.codigo, subTipo: tip })); }; 
+        cont.appendChild(d); 
+    }
+
     function quitar(k, i) { horariosPorCiclo[ROMANOS[indiceCicloGeneral]][k].splice(i, 1); cargarHorarioCiclo(); renderCursosAsignados(); }
-    async function guardarTodoPermanente() { try { await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosPorCiclo, savedDocenteIdx: indiceDocenteActual, savedCicloIdx: indiceCicloGeneral, ultimaActualizacion: new Date() }); alert("✅ Sincronizado."); } catch(e) { alert("❌ Error."); } }
+    async function guardarTodoPermanente() { try { await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosPorCiclo, savedDocenteIdx: indiceDocenteActual, savedCicloIdx: indiceCicloGeneral, ultimaActualizacion: new Date() }); alert("✅ Guardado."); } catch(e) { alert("❌ Error."); } }
 </script>
 </body>
 </html>
