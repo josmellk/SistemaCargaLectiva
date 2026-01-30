@@ -55,22 +55,13 @@
         .ciclo-pagination { background: white; padding: 10px; border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; gap: 30px; position: sticky; bottom: 0; z-index: 300; }
         .btn-ciclo-nav { background: var(--blue); color: white; border: none; padding: 8px 25px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 18px; }
 
-        /* --- CONFIGURACIÓN DE IMPRESIÓN CORREGIDA --- */
         #print-section { display: none; }
         @media print {
             @page { size: A4 landscape; margin: 0; }
             html, body { height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: white !important; }
             body > *:not(#print-section) { display: none !important; }
             #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-            .page-break { 
-                page-break-after: always; 
-                width: 100% !important; 
-                height: 100vh !important;
-                display: flex !important; 
-                flex-direction: column !important;
-                padding: 0.5cm 1cm !important; 
-                box-sizing: border-box !important;
-            }
+            .page-break { page-break-after: always; width: 100% !important; height: 100vh !important; display: flex !important; flex-direction: column !important; padding: 0.5cm 1cm !important; box-sizing: border-box !important; }
             .page-break:last-child { page-break-after: auto !important; }
             .schedule-table { width: 100% !important; border: 2pt solid #000 !important; table-layout: fixed !important; border-collapse: collapse !important; }
             .schedule-table td { height: 2.0cm !important; border: 1pt solid #000 !important; }
@@ -209,15 +200,39 @@
         hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
     }
 
+    // --- SINCRONIZACION MEJORADA CON IDENTIDAD PREVIA ---
+    function obtenerDocenteActualizado(codigo, subTipoBloque, nombreGuardado) {
+        // Primero verificamos si el nombre guardado ya pertenece a alguien en la lista que tenga ese curso.
+        // Esto evita que el sistema "salte" a otro docente si ya hay un dueño asignado.
+        const docenteOrigen = docentes.find(d => 
+            d.nombre.trim() === nombreGuardado.trim() && 
+            d.carga.some(c => c.codigo.toString().trim() === codigo.toString().trim())
+        );
+
+        if (docenteOrigen) return docenteOrigen.nombre;
+
+        // Si no hay un dueño previo reconocido (ej. nombre editado), aplicamos la regla de carga
+        if (subTipoBloque === 'HT') {
+            const full = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'FULL'));
+            return full ? full.nombre : nombreGuardado;
+        } else {
+            const hpOnly = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'HP'));
+            if (hpOnly) return hpOnly.nombre;
+            const full = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'FULL'));
+            return full ? full.nombre : nombreGuardado;
+        }
+    }
+
     function cargarHorarioCiclo() { 
         generarTablaBase(); 
         const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}; 
         Object.keys(data).forEach(k => { 
             const cont = document.getElementById(`cell-${k}`); 
             if(cont) data[k].forEach((inf, idx) => { 
+                const nombreAMostrar = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
                 const b = document.createElement('div'); b.className = 'dropped-course'; 
-                b.style.backgroundColor = getColorPorDocente(inf.docente); 
-                b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; 
+                b.style.backgroundColor = getColorPorDocente(nombreAMostrar); 
+                b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; 
                 cont.appendChild(b); 
             }); 
         }); 
@@ -282,17 +297,17 @@
     function imprimirSoloVistaActual() {
         const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}, printContainer = document.getElementById('print-section');
         printContainer.innerHTML = ""; 
+        let paginas = [];
         let hayM = false, hayT = false;
         for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
         for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
-        
-        if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
-        if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
-        
-        if(!hayM && !hayT) {
+        if(hayM) paginas.push({turno: "MAÑANA", horas: hMañana, offset: 0});
+        if(hayT) paginas.push({turno: "TARDE", horas: hTarde, offset: 6});
+        if(paginas.length === 0) {
             const esM = (indiceCicloGeneral % 2 === 0);
-            generarPaginaTurno(printContainer, cic, esM ? "MAÑANA" : "TARDE", esM ? hMañana : hTarde, esM ? 0 : 6);
+            paginas.push(esM ? {turno: "MAÑANA", horas: hMañana, offset: 0} : {turno: "TARDE", horas: hTarde, offset: 6});
         }
+        paginas.forEach(p => generarPaginaTurno(printContainer, cic, p.turno, p.horas, p.offset));
         setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
     }
 
@@ -322,7 +337,10 @@
             const realIdx = idx + offset; html += `<tr><td class="hour-cell">${h}</td>`;
             for (let dia = 1; dia <= 5; dia++) {
                 const key = `${realIdx}-${dia}`, bloques = dataCiclo[key] || [];
-                html += `<td><div class="diagonal-container">` + bloques.map(inf => `<div class="dropped-course" style="background-color:${getColorPorDocente(inf.docente)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${inf.docente}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span></div>`).join("") + `</div></td>`;
+                html += `<td><div class="diagonal-container">` + bloques.map(inf => {
+                    const nombreFin = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
+                    return `<div class="dropped-course" style="background-color:${getColorPorDocente(nombreFin)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreFin}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span></div>`;
+                }).join("") + `</div></td>`;
             }
             html += `</tr>`;
         });
