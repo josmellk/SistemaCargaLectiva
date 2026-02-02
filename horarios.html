@@ -14,7 +14,8 @@
         nav a:hover { opacity: 0.8; }
         .layout-container { display: flex; flex-grow: 1; overflow: hidden; width: 100vw; }
 
-        .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100%; z-index: 300; }
+        /* MODIFICADO: Ancho de 380px para visualizar mejor los cursos */
+        .sidebar { width: 380px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100%; z-index: 300; }
         .sidebar-header { padding: 10px; background: var(--blue); color: white; text-align: center; }
         .prelacion-nav { background: #edf2f7; padding: 10px; border-bottom: 2px solid #cbd5e0; text-align: center; }
         
@@ -26,12 +27,17 @@
         .assigned-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
         .drag-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: grab; font-size: 11px; border-left: 8px solid #4a5568; }
         
-        .save-container { padding: 15px; background: #f1f5f9; border-top: 1px solid #ddd; text-align: center; }
-        .btn-save-main { background: var(--green); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 14px; font-weight: 900; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .save-container { padding: 12px; background: #f1f5f9; border-top: 1px solid #ddd; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+        .btn-save-main { background: var(--green); color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 900; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
+        /* MODIFICADO: Botones de limpieza más pequeños y en fila */
+        .clear-btns-row { display: flex; gap: 5px; width: 100%; }
+        .btn-clear-small { flex: 1; color: white; padding: 6px 2px; border: none; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-warning-small { background: var(--warning); }
+        .btn-danger-small { background: var(--red); }
+
         .unsaved-warning { display: none; color: var(--red); font-size: 10px; font-weight: bold; margin-bottom: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .btn-unsaved { border: 3px solid var(--red) !important; animation: pulse-border 1.5s infinite; }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; overflow-y: auto; scroll-behavior: smooth; }
         .schedule-container { padding: 0 20px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; }
@@ -103,7 +109,13 @@
         <div class="assigned-list" id="listaParaArrastrar"></div>
         <div class="save-container">
             <div id="txtWarning" class="unsaved-warning">⚠️ TIENES CAMBIOS SIN GUARDAR</div>
-            <button id="btnGuardar" class="btn-save-main" onclick="guardarTodoPermanente()">💾 GUARDAR HORARIO</button>
+            
+            <div class="clear-btns-row">
+                <button class="btn-clear-small btn-warning-small" onclick="limpiarCicloActual()">🧹 Limpiar Ciclo</button>
+                <button class="btn-clear-small btn-danger-small" onclick="borrarTodoElHorarioGlobal()">💣 Borrar Todo</button>
+            </div>
+            
+            <button id="btnGuardar" class="btn-save-main" onclick="guardarTodoPermanente()">💾 GUARDAR CAMBIOS</button>
         </div>
     </div>
 
@@ -143,11 +155,30 @@
 
     function registrarCambio() { cambiosPendientes = true; document.getElementById('txtWarning').style.display = 'block'; document.getElementById('btnGuardar').classList.add('btn-unsaved'); }
 
+    function limpiarCicloActual() {
+        const cic = ROMANOS[indiceCicloGeneral];
+        if (confirm(`¿Eliminar todos los cursos del CICLO ${cic}?`)) {
+            horariosPorCiclo[cic] = {};
+            registrarCambio();
+            cargarHorarioCiclo();
+            renderCursosAsignados();
+        }
+    }
+
+    function borrarTodoElHorarioGlobal() {
+        if (confirm("⚠️ ADVERTENCIA: Se borrarán los horarios de TODOS los ciclos (I al X). ¿Deseas continuar?")) {
+            ROMANOS.forEach(cic => { horariosPorCiclo[cic] = {}; });
+            registrarCambio();
+            cargarHorarioCiclo();
+            renderCursosAsignados();
+        }
+    }
+
     document.addEventListener('click', function(e) {
         if (e.target.tagName === 'A' && e.target.closest('#mainNav')) {
             if (cambiosPendientes) {
                 e.preventDefault();
-                if (!confirm("⚠️ Tienes cambios sin guardar. ¿Deseas salir de todas formas?")) return;
+                if (!confirm("⚠️ Tienes cambios sin guardar. ¿Deseas salir?")) return;
                 cambiosPendientes = false; window.location.href = e.target.href;
             }
         }
@@ -200,18 +231,13 @@
         hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
     }
 
-    // --- SINCRONIZACION MEJORADA CON IDENTIDAD PREVIA ---
     function obtenerDocenteActualizado(codigo, subTipoBloque, nombreGuardado) {
-        // Primero verificamos si el nombre guardado ya pertenece a alguien en la lista que tenga ese curso.
-        // Esto evita que el sistema "salte" a otro docente si ya hay un dueño asignado.
         const docenteOrigen = docentes.find(d => 
             d.nombre.trim() === nombreGuardado.trim() && 
             d.carga.some(c => c.codigo.toString().trim() === codigo.toString().trim())
         );
-
         if (docenteOrigen) return docenteOrigen.nombre;
 
-        // Si no hay un dueño previo reconocido (ej. nombre editado), aplicamos la regla de carga
         if (subTipoBloque === 'HT') {
             const full = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'FULL'));
             return full ? full.nombre : nombreGuardado;

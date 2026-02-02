@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --blue: #1a3a5a; --light-blue: #3498db; --green: #27ae60; --purple: #8e44ad; --orange: #f39c12; --bg: #f4f7f9; }
+        :root { --blue: #1a3a5a; --light-blue: #3498db; --green: #27ae60; --purple: #8e44ad; --orange: #f39c12; --bg: #f4f7f9; --red: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         .sidebar { width: 400px; background: white; border-right: 2px solid #ddd; display: flex; flex-direction: column; }
@@ -31,38 +31,71 @@
         .tag-hp-assigned { background: var(--purple); }
 
         .main-content { flex-grow: 1; padding: 25px; overflow-y: auto; }
-        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap; }
         
         .docentes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+        
+        /* BLOQUE DOCENTE: Crecimiento y Sombra */
         .docente-container { 
             background: white; border-radius: 8px; padding: 15px; min-height: 120px; 
-            transition: all 0.3s ease; border: 2px solid #ccc; border-top: 5px solid var(--light-blue); 
-            position: relative;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; 
+            border: 2px solid #ccc; border-top: 5px solid var(--light-blue); 
+            position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.02);
+        }
+        .docente-container:hover { 
+            border-color: var(--light-blue); 
+            transform: scale(1.02); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            z-index: 10;
         }
         .docente-container.drag-over { background: #e3f2fd; border: 2px dashed var(--light-blue); }
         
         .docente-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--blue); padding-bottom: 5px; }
+        .docente-info-main { display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
+        .docente-info-main strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: var(--blue); }
+        
+        .btn-docente-ctrl { cursor: pointer; border: none; background: none; font-size: 15px; opacity: 0.7; transition: 0.2s; padding: 2px; }
+        .btn-docente-ctrl:hover { opacity: 1; transform: scale(1.2); }
         .total-hrs-badge { font-size: 16px; font-weight: bold; color: var(--blue); }
         
-        /* Modificado: el item asignado ahora es arrastrable */
+        .assigned-list { min-height: 50px; }
         .assigned-item { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #f8f9fa; padding: 8px; margin-bottom: 5px; border-radius: 4px; 
             border-left: 4px solid var(--blue); font-size: 11px; cursor: grab;
+            position: relative;
         }
-        .assigned-item:active { cursor: grabbing; opacity: 0.6; }
         
+        /* BOTÓN X PARA CURSOS */
+        .btn-del-course { 
+            color: white !important; 
+            background-color: var(--red) !important; 
+            border: none; 
+            border-radius: 4px; 
+            width: 22px; 
+            height: 22px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 12px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            flex-shrink: 0;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        .btn-del-course:hover { background-color: #c0392b !important; }
+
         .tag-badge { font-size: 9px; padding: 2px 4px; border-radius: 3px; color: white; font-weight: bold; margin-right: 5px; }
         .bg-FULL { background: var(--green); }
         .bg-HP { background: var(--purple); }
-        .btn-del { color: #e74c3c; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: bold; }
 
         .excel-btn-group { display: flex; gap: 5px; align-items: center; background: #f1f5f9; padding: 5px; border-radius: 6px; border: 1px solid #cbd5e0; }
         .file-label { background: #718096; color: white; padding: 8px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
         .btn-process { background: var(--light-blue); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
 
         @media print {
-            .sidebar, .controls, .btn-del, .btn-docente-ctrl { display: none !important; }
+            .sidebar, .controls, .btn-del-course, .btn-docente-ctrl { display: none !important; }
             .docentes-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
@@ -74,7 +107,7 @@
         <h3 style="margin:0">📚 Asignación por Grupos</h3>
         <div style="margin-top:10px;">
             <label style="font-size: 11px; opacity: 0.9;">Modo de Asignación:</label>
-            <select id="modoArrastre" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px;">
+            <select id="modoArrastre" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border:none; font-weight:bold; cursor:pointer;">
                 <option value="FULL">CURSO COMPLETO (T + P)</option>
                 <option value="HP">SOLO PRÁCTICA (P)</option>
             </select>
@@ -91,11 +124,11 @@
             <input type="file" id="excelDocentes" accept=".xlsx,.xls" style="display: none;" onchange="document.getElementById('fileLabelText').innerText = this.files[0].name">
             <button onclick="importarDocentesExcel()" class="btn-process">🚀 CARGAR DOCENTES</button>
         </div>
-        <input type="text" id="nombreDocente" placeholder="Nombre docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
-        <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">+ AÑADIR</button>
-        <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">🖨️ IMPRIMIR</button>
-        <button onclick="limpiarTodo()" style="background:#e74c3c; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">LIMPIAR</button>
-        <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">📅 HORARIOS</button>
+        <input type="text" id="nombreDocente" placeholder="Nuevo docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
+        <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">+ AÑADIR</button>
+        <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ IMPRIMIR</button>
+        <button onclick="limpiarSoloCargas()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">LIMPIAR CURSOS</button>
+        <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">📅 HORARIOS</button>
     </div>
     <div class="docentes-grid" id="gridDocentes"></div>
 </div>
@@ -146,44 +179,28 @@
                 card.className = `course-card ${(c["TC"]||"").toString().trim().toUpperCase()==="E" ? 'electivo-color' : ''}`;
                 card.draggable = true;
                 const monitorHTML = historial.map(h => `<div class="group-tag ${h.tipo === 'FULL' ? 'tag-full-assigned' : 'tag-hp-assigned'}">${h.tipo === 'FULL' ? 'T+P' : 'SOLO P'}<span style="font-size:8px; display:block;">${h.docente}</span></div>`).join("");
-                card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"]}</span><br><strong>${cod}</strong> - ${c["CURSO"]}<div class="group-monitor">${monitorHTML}</div>`;
+                card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"]}</span><br><strong>${cod}</strong> - ${c["CURSO"]}<br><small>H: T:${c["HT"]} | P:${c["HP"]}</small><div class="group-monitor">${monitorHTML}</div>`;
                 card.ondragstart = (e) => { 
                     e.dataTransfer.setData("courseCode", cod); 
                     e.dataTransfer.setData("modo", document.getElementById('modoArrastre').value);
-                    e.dataTransfer.setData("sourceDocId", "sidebar"); // Indica que viene de la lista lateral
+                    e.dataTransfer.setData("sourceDocId", "sidebar");
                 };
                 container.appendChild(card);
             }
         });
     }
 
-    // --- NUEVA LÓGICA DE ASIGNACIÓN Y MOVIMIENTO ---
     function procesarEntrega(targetDocId, courseCode, modo, sourceDocId, itemIndex) {
-        // 1. Si viene de otro docente, eliminarlo de allá primero
         if (sourceDocId !== "sidebar" && sourceDocId != targetDocId) {
             const oldDoc = docentes.find(d => d.id == sourceDocId);
             if (oldDoc) oldDoc.carga.splice(itemIndex, 1);
         }
-
-        // 2. Asignar al nuevo docente
         const targetDoc = docentes.find(d => d.id == targetDocId);
         const curso = mallaRaw.find(c => c["CÓD.ASIG."] === courseCode);
+        if (targetDoc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) return alert("Ya asignado.");
         
-        // Evitar duplicados en el mismo docente
-        if (targetDoc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) {
-            alert("Este docente ya tiene este curso.");
-            guardarYRender();
-            return;
-        }
-
         let horas = modo === 'FULL' ? (parseInt(curso["HT"])||0) + (parseInt(curso["HP"])||0) : parseInt(curso["HP"])||0;
-        targetDoc.carga.push({ 
-            nombre: `[C-${curso["CICLO"]}] ${curso["CURSO"]}${modo==='HP'?' (SOLO P)':''}`, 
-            codigo: courseCode, 
-            horas, 
-            tipo: modo 
-        });
-
+        targetDoc.carga.push({ nombre: `[C-${curso["CICLO"]}] ${curso["CURSO"]}${modo==='HP'?' (SOLO P)':''}`, codigo: courseCode, horas, tipo: modo });
         guardarYRender();
     }
 
@@ -196,19 +213,16 @@
             container.ondragover = e => { e.preventDefault(); container.classList.add('drag-over'); };
             container.ondragleave = () => container.classList.remove('drag-over');
             container.ondrop = e => { 
-                e.preventDefault(); 
-                container.classList.remove('drag-over'); 
-                const courseCode = e.dataTransfer.getData("courseCode");
-                const modo = e.dataTransfer.getData("modo");
-                const sourceDocId = e.dataTransfer.getData("sourceDocId");
-                const itemIndex = e.dataTransfer.getData("itemIndex");
-                
-                procesarEntrega(doc.id, courseCode, modo, sourceDocId, itemIndex);
+                e.preventDefault(); container.classList.remove('drag-over'); 
+                procesarEntrega(doc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo"), e.dataTransfer.getData("sourceDocId"), e.dataTransfer.getData("itemIndex"));
             };
-            
             container.innerHTML = `
                 <div class="docente-header">
-                    <strong>👤 ${doc.nombre}</strong>
+                    <div class="docente-info-main">
+                        <button class="btn-docente-ctrl" title="Editar Nombre" onclick="editarDocente(${doc.id})">✏️</button>
+                        <button class="btn-docente-ctrl" title="Eliminar Módulo" onclick="eliminarDocente(${doc.id})">🗑️</button>
+                        <strong>👤 ${doc.nombre}</strong>
+                    </div>
                     <div class="total-hrs-badge">${doc.carga.reduce((a,b)=>a+b.horas,0)}h</div>
                 </div>
                 <div class="assigned-list">
@@ -218,11 +232,11 @@
                                          event.dataTransfer.setData('modo','${item.tipo}'); 
                                          event.dataTransfer.setData('sourceDocId','${doc.id}'); 
                                          event.dataTransfer.setData('itemIndex','${i}');">
-                            <div>
+                            <div style="flex-grow:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                 <span class="tag-badge bg-${item.tipo}">${item.tipo==='FULL'?'T+P':'SOLO P'}</span>
                                 <strong>${item.nombre}</strong>
                             </div>
-                            <button class="btn-del" onclick="docentes.find(d=>d.id==${doc.id}).carga.splice(${i},1); guardarYRender();">✕</button>
+                            <button class="btn-del-course" title="Quitar Curso" onclick="event.stopPropagation(); docentes.find(d=>d.id==${doc.id}).carga.splice(${i},1); guardarYRender();">✕</button>
                         </div>
                     `).join("")}
                 </div>
@@ -231,10 +245,33 @@
         });
     }
 
+    function editarDocente(docId) {
+        const doc = docentes.find(d => d.id == docId);
+        const nuevoNombre = prompt("Editar nombre del docente:", doc.nombre);
+        if (nuevoNombre && nuevoNombre.trim() !== "") {
+            doc.nombre = nuevoNombre.toUpperCase().trim();
+            guardarYRender();
+        }
+    }
+
+    function eliminarDocente(docId) {
+        if (confirm("¿Seguro que deseas eliminar este docente y todo su módulo?")) {
+            docentes = docentes.filter(d => d.id != docId);
+            guardarYRender();
+        }
+    }
+
+    function limpiarSoloCargas() {
+        if(confirm("¿Vaciar cursos de todos los docentes?")) {
+            docentes.forEach(d => d.carga = []);
+            guardarYRender();
+        }
+    }
+
     function agregarDocente() {
         const nom = document.getElementById('nombreDocente').value.trim();
         if(!nom) return;
-        docentes.push({ id: Date.now(), nombre: nom.toUpperCase(), carga: [] });
+        docentes.push({ id: Date.now() + Math.random(), nombre: nom.toUpperCase(), carga: [] });
         document.getElementById('nombreDocente').value = "";
         guardarYRender();
     }
@@ -245,7 +282,6 @@
     }
 
     function abrirHorarios() { window.open('horarios.html', '_blank'); }
-    function limpiarTodo() { if(confirm("¿Borrar todo?")) { docentes = []; guardarYRender(); } }
 </script>
 </body>
 </html>
