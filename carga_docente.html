@@ -17,21 +17,11 @@
         .course-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
         
         .course-card { 
-            background: #fff; 
-            border: 2px solid #b0bec5; 
-            padding: 12px; 
-            margin-bottom: 10px; 
-            border-radius: 8px; 
-            cursor: grab; 
-            font-size: 12px; 
-            transition: 0.2s; 
+            background: #fff; border: 2px solid #b0bec5; padding: 12px; margin-bottom: 10px; 
+            border-radius: 8px; cursor: grab; font-size: 12px; transition: 0.2s; 
             box-shadow: 2px 2px 5px rgba(0,0,0,0.05); 
         }
-        .course-card:hover { 
-            border-color: var(--light-blue); 
-            background: #f0faff; 
-            box-shadow: 2px 2px 8px rgba(52, 152, 219, 0.3);
-        }
+        .course-card:hover { border-color: var(--light-blue); background: #f0faff; }
         .course-card.electivo-color { background: #f3e5f5; border-left: 5px solid #9c27b0; }
         
         .tag-ciclo-card { background: #e0e0e0; color: #333; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 10px; margin-bottom: 5px; display: inline-block; }
@@ -39,53 +29,41 @@
         .group-tag { display: block; font-size: 10px; padding: 3px 6px; border-radius: 4px; color: white; font-weight: bold; width: 100%; box-sizing: border-box; }
         .tag-full-assigned { background: var(--green); }
         .tag-hp-assigned { background: var(--purple); }
-        .teacher-name-tag { display: block; font-weight: normal; font-size: 9px; margin-top: 2px; text-transform: uppercase; }
 
         .main-content { flex-grow: 1; padding: 25px; overflow-y: auto; }
-        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
         .docentes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
-        
         .docente-container { 
-            background: white; 
-            border-radius: 8px; 
-            padding: 15px; 
-            min-height: 120px; 
-            transition: all 0.3s ease; 
-            border: 2px solid #ccc; 
-            border-top: 5px solid var(--light-blue); 
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.02);
+            background: white; border-radius: 8px; padding: 15px; min-height: 120px; 
+            transition: all 0.3s ease; border: 2px solid #ccc; border-top: 5px solid var(--light-blue); 
             position: relative;
         }
-
-        .docente-container:hover { 
-            border-color: var(--light-blue);
-            box-shadow: 0 0 12px rgba(52, 152, 219, 0.25);
-            transform: translateY(-2px);
-        }
-
         .docente-container.drag-over { background: #e3f2fd; border: 2px dashed var(--light-blue); }
         
-        .docente-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--blue); padding-bottom: 5px; width: 100%; }
-        .docente-controls { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-        .docente-info-main { display: flex; align-items: center; gap: 5px; flex-grow: 1; min-width: 0; }
-        .docente-info-main strong { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .docente-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--blue); padding-bottom: 5px; }
         .total-hrs-badge { font-size: 16px; font-weight: bold; color: var(--blue); }
         
-        .assigned-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 4px solid var(--blue); font-size: 11px; }
+        /* Modificado: el item asignado ahora es arrastrable */
+        .assigned-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #f8f9fa; padding: 8px; margin-bottom: 5px; border-radius: 4px; 
+            border-left: 4px solid var(--blue); font-size: 11px; cursor: grab;
+        }
+        .assigned-item:active { cursor: grabbing; opacity: 0.6; }
+        
         .tag-badge { font-size: 9px; padding: 2px 4px; border-radius: 3px; color: white; font-weight: bold; margin-right: 5px; }
         .bg-FULL { background: var(--green); }
         .bg-HP { background: var(--purple); }
         .btn-del { color: #e74c3c; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: bold; }
-        .btn-docente-ctrl { cursor: pointer; border: none; background: none; font-size: 13px; opacity: 0.5; padding: 2px; transition: 0.2s; }
-        .btn-docente-ctrl:hover { opacity: 1; transform: scale(1.2); }
+
+        .excel-btn-group { display: flex; gap: 5px; align-items: center; background: #f1f5f9; padding: 5px; border-radius: 6px; border: 1px solid #cbd5e0; }
+        .file-label { background: #718096; color: white; padding: 8px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .btn-process { background: var(--light-blue); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
 
         @media print {
-            body { display: block; height: auto; background: white; }
             .sidebar, .controls, .btn-del, .btn-docente-ctrl { display: none !important; }
-            .main-content { padding: 0; overflow: visible; }
-            .docentes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-            .docente-container { box-shadow: none; border: 2px solid #333; border-top: 6px solid var(--blue); }
+            .docentes-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -96,7 +74,7 @@
         <h3 style="margin:0">📚 Asignación por Grupos</h3>
         <div style="margin-top:10px;">
             <label style="font-size: 11px; opacity: 0.9;">Modo de Asignación:</label>
-            <select id="modoArrastre" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border:none; font-weight:bold; cursor:pointer;">
+            <select id="modoArrastre" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px;">
                 <option value="FULL">CURSO COMPLETO (T + P)</option>
                 <option value="HP">SOLO PRÁCTICA (P)</option>
             </select>
@@ -108,31 +86,26 @@
 
 <div class="main-content">
     <div class="controls">
-        <input type="file" id="excelDocentes" accept=".xlsx,.xls" style="font-size: 11px; width: 200px;">
-        <input type="text" id="nombreDocente" placeholder="Nombre del docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
-        <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">+ AÑADIR DOCENTE</button>
-        <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ IMPRIMIR</button>
+        <div class="excel-btn-group">
+            <label for="excelDocentes" class="file-label" id="fileLabelText">📁 SELECCIONAR EXCEL</label>
+            <input type="file" id="excelDocentes" accept=".xlsx,.xls" style="display: none;" onchange="document.getElementById('fileLabelText').innerText = this.files[0].name">
+            <button onclick="importarDocentesExcel()" class="btn-process">🚀 CARGAR DOCENTES</button>
+        </div>
+        <input type="text" id="nombreDocente" placeholder="Nombre docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
+        <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">+ AÑADIR</button>
+        <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">🖨️ IMPRIMIR</button>
         <button onclick="limpiarTodo()" style="background:#e74c3c; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">LIMPIAR</button>
-        <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">📅 HORARIOS</button>
+        <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">📅 HORARIOS</button>
     </div>
     <div class="docentes-grid" id="gridDocentes"></div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc",
-        authDomain: "carga-docente.firebaseapp.com",
-        projectId: "carga-docente",
-        storageBucket: "carga-docente.firebasestorage.app",
-        messagingSenderId: "994250556754",
-        appId: "1:994250556754:web:ecabed4715e7803542e68b",
-        measurementId: "G-YCBK251ESS"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let mallaRaw = [];
-    let docentes = [];
+    let mallaRaw = [], docentes = [];
 
     window.onload = async () => {
         const config = await db.collection("planificacion").doc("config_general").get();
@@ -142,6 +115,24 @@
         renderCursos(); renderDocentes(); 
     };
 
+    function importarDocentesExcel() {
+        const file = document.getElementById('excelDocentes').files[0];
+        if (!file) return alert("Selecciona un archivo.");
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const workbook = XLSX.read(e.target.result, { type: 'binary' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            rows.forEach(row => {
+                const nombre = (row["DOCENTE"] || Object.values(row)[0] || "").toString().trim().toUpperCase();
+                if (nombre && !docentes.find(d => d.nombre === nombre)) {
+                    docentes.push({ id: Date.now() + Math.random(), nombre: nombre, carga: [] });
+                }
+            });
+            guardarYRender();
+        };
+        reader.readAsBinaryString(file);
+    }
+
     function renderCursos() {
         const container = document.getElementById('listaCursos');
         const busqueda = document.getElementById('busquedaCurso').value.toLowerCase();
@@ -150,54 +141,49 @@
             const cod = c["CÓD.ASIG."];
             const historial = [];
             docentes.forEach(d => d.carga.forEach(cur => { if(cur.codigo === cod) historial.push({ docente: d.nombre, tipo: cur.tipo }); }));
-            const texto = (c["CURSO"] + cod).toLowerCase();
-            if (texto.includes(busqueda)) {
+            if ((c["CURSO"] + cod).toLowerCase().includes(busqueda)) {
                 const card = document.createElement('div');
                 card.className = `course-card ${(c["TC"]||"").toString().trim().toUpperCase()==="E" ? 'electivo-color' : ''}`;
                 card.draggable = true;
-                const monitorHTML = historial.map(h => `<div class="group-tag ${h.tipo === 'FULL' ? 'tag-full-assigned' : 'tag-hp-assigned'}">${h.tipo === 'FULL' ? 'T+P' : 'SOLO P'}<span class="teacher-name-tag">${h.docente}</span></div>`).join("");
-                card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"]}</span><br><strong>${cod}</strong> - ${c["CURSO"]}<br><small>H: T:${c["HT"]} | P:${c["HP"]}</small><div class="group-monitor">${monitorHTML || '<span style="color:#999; font-size:9px">Sin asignar</span>'}</div>`;
-                card.ondragstart = (e) => { e.dataTransfer.setData("courseCode", cod); e.dataTransfer.setData("modo", document.getElementById('modoArrastre').value); };
+                const monitorHTML = historial.map(h => `<div class="group-tag ${h.tipo === 'FULL' ? 'tag-full-assigned' : 'tag-hp-assigned'}">${h.tipo === 'FULL' ? 'T+P' : 'SOLO P'}<span style="font-size:8px; display:block;">${h.docente}</span></div>`).join("");
+                card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"]}</span><br><strong>${cod}</strong> - ${c["CURSO"]}<div class="group-monitor">${monitorHTML}</div>`;
+                card.ondragstart = (e) => { 
+                    e.dataTransfer.setData("courseCode", cod); 
+                    e.dataTransfer.setData("modo", document.getElementById('modoArrastre').value);
+                    e.dataTransfer.setData("sourceDocId", "sidebar"); // Indica que viene de la lista lateral
+                };
                 container.appendChild(card);
             }
         });
     }
 
-    function asignarCurso(docId, courseCode, modo) {
-        const doc = docentes.find(d => d.id == docId);
+    // --- NUEVA LÓGICA DE ASIGNACIÓN Y MOVIMIENTO ---
+    function procesarEntrega(targetDocId, courseCode, modo, sourceDocId, itemIndex) {
+        // 1. Si viene de otro docente, eliminarlo de allá primero
+        if (sourceDocId !== "sidebar" && sourceDocId != targetDocId) {
+            const oldDoc = docentes.find(d => d.id == sourceDocId);
+            if (oldDoc) oldDoc.carga.splice(itemIndex, 1);
+        }
+
+        // 2. Asignar al nuevo docente
+        const targetDoc = docentes.find(d => d.id == targetDocId);
         const curso = mallaRaw.find(c => c["CÓD.ASIG."] === courseCode);
-        if(doc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) return alert("Ya asignado.");
+        
+        // Evitar duplicados en el mismo docente
+        if (targetDoc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) {
+            alert("Este docente ya tiene este curso.");
+            guardarYRender();
+            return;
+        }
+
         let horas = modo === 'FULL' ? (parseInt(curso["HT"])||0) + (parseInt(curso["HP"])||0) : parseInt(curso["HP"])||0;
-        doc.carga.push({ nombre: `[C-${curso["CICLO"]}] ${curso["CURSO"]}${modo==='HP'?' (SOLO P)':''}`, codigo: courseCode, horas, tipo: modo });
-        guardarYRender();
-    }
+        targetDoc.carga.push({ 
+            nombre: `[C-${curso["CICLO"]}] ${curso["CURSO"]}${modo==='HP'?' (SOLO P)':''}`, 
+            codigo: courseCode, 
+            horas, 
+            tipo: modo 
+        });
 
-    function editarDocente(docId) {
-        const doc = docentes.find(d => d.id == docId);
-        const nuevoNombre = prompt("Editar nombre del docente:", doc.nombre);
-        if (nuevoNombre && nuevoNombre.trim() !== "") {
-            doc.nombre = nuevoNombre.toUpperCase().trim();
-            guardarYRender();
-        }
-    }
-
-    function eliminarDocente(docId) {
-        if (confirm("¿Eliminar docente?")) {
-            docentes = docentes.filter(d => d.id != docId);
-            guardarYRender();
-        }
-    }
-
-    function guardarYRender() {
-        db.collection("planificacion").doc("lista_docentes").set({ docentes: docentes, ultimaActualizacion: new Date() });
-        renderCursos(); renderDocentes();
-    }
-
-    function agregarDocente() {
-        const nom = document.getElementById('nombreDocente').value.trim();
-        if(!nom) return;
-        docentes.push({ id: Date.now(), nombre: nom.toUpperCase(), carga: [] });
-        document.getElementById('nombreDocente').value = "";
         guardarYRender();
     }
 
@@ -209,31 +195,53 @@
             container.className = 'docente-container';
             container.ondragover = e => { e.preventDefault(); container.classList.add('drag-over'); };
             container.ondragleave = () => container.classList.remove('drag-over');
-            container.ondrop = e => { e.preventDefault(); container.classList.remove('drag-over'); asignarCurso(doc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo")); };
+            container.ondrop = e => { 
+                e.preventDefault(); 
+                container.classList.remove('drag-over'); 
+                const courseCode = e.dataTransfer.getData("courseCode");
+                const modo = e.dataTransfer.getData("modo");
+                const sourceDocId = e.dataTransfer.getData("sourceDocId");
+                const itemIndex = e.dataTransfer.getData("itemIndex");
+                
+                procesarEntrega(doc.id, courseCode, modo, sourceDocId, itemIndex);
+            };
             
             container.innerHTML = `
                 <div class="docente-header">
-                    <div class="docente-controls">
-                        <button class="btn-docente-ctrl" onclick="editarDocente(${doc.id})">✏️</button>
-                        <button class="btn-docente-ctrl" onclick="eliminarDocente(${doc.id})">🗑️</button>
-                    </div>
-                    <div class="docente-info-main">
-                        <strong>👤 ${doc.nombre}</strong>
-                    </div>
+                    <strong>👤 ${doc.nombre}</strong>
                     <div class="total-hrs-badge">${doc.carga.reduce((a,b)=>a+b.horas,0)}h</div>
                 </div>
-                ${doc.carga.map((item, i) => `
-                    <div class="assigned-item">
-                        <div>
-                            <span class="tag-badge bg-${item.tipo}">${item.tipo==='FULL'?'T+P':'SOLO P'}</span>
-                            <strong>${item.nombre}</strong>
+                <div class="assigned-list">
+                    ${doc.carga.map((item, i) => `
+                        <div class="assigned-item" draggable="true" 
+                             ondragstart="event.dataTransfer.setData('courseCode','${item.codigo}'); 
+                                         event.dataTransfer.setData('modo','${item.tipo}'); 
+                                         event.dataTransfer.setData('sourceDocId','${doc.id}'); 
+                                         event.dataTransfer.setData('itemIndex','${i}');">
+                            <div>
+                                <span class="tag-badge bg-${item.tipo}">${item.tipo==='FULL'?'T+P':'SOLO P'}</span>
+                                <strong>${item.nombre}</strong>
+                            </div>
+                            <button class="btn-del" onclick="docentes.find(d=>d.id==${doc.id}).carga.splice(${i},1); guardarYRender();">✕</button>
                         </div>
-                        <button class="btn-del" onclick="docentes.find(d=>d.id==${doc.id}).carga.splice(${i},1); guardarYRender();">✕</button>
-                    </div>
-                `).join("")}
+                    `).join("")}
+                </div>
             `;
             grid.appendChild(container);
         });
+    }
+
+    function agregarDocente() {
+        const nom = document.getElementById('nombreDocente').value.trim();
+        if(!nom) return;
+        docentes.push({ id: Date.now(), nombre: nom.toUpperCase(), carga: [] });
+        document.getElementById('nombreDocente').value = "";
+        guardarYRender();
+    }
+
+    function guardarYRender() {
+        db.collection("planificacion").doc("lista_docentes").set({ docentes: docentes, ultimaActualizacion: new Date() });
+        renderCursos(); renderDocentes();
     }
 
     function abrirHorarios() { window.open('horarios.html', '_blank'); }
