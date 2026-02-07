@@ -2,6 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+        function verificarYBloquear() {
+        if (!localStorage.getItem("accesoPermitido")) {
+            window.location.replace("login.html");
+        }
+    }
+
+    // Bloqueo inicial
+    verificarYBloquear();
+
+    // Escuchar si se cierra sesión en otra pestaña
+    window.addEventListener('storage', (e) => {
+        if (e.key === "accesoPermitido" && !e.newValue) {
+            verificarYBloquear();
+        }
+    });
+    </script>
     <title>Carga Académica - Gestión de Grupos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -36,8 +53,12 @@
         
         .docentes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
         
-        .docente-container { background: white; border-radius: 8px; padding: 15px; min-height: 120px; border: 2px solid #ccc; border-top: 5px solid var(--light-blue); position: relative; }
-        .docente-container:hover { border-color: var(--light-blue); transform: scale(1.02); transition: all 0.3s ease; z-index: 10; }
+        .docente-container { 
+            background: white; border-radius: 8px; padding: 15px; min-height: 120px; 
+            transition: transform 0.2s ease; border: 2px solid #ccc; border-top: 5px solid var(--light-blue); 
+            position: relative;
+        }
+        .docente-container:hover { border-color: var(--light-blue); transform: scale(1.02); z-index: 10; }
         .docente-container.drag-over { background: #e3f2fd; border: 2px dashed var(--light-blue); }
         
         .docente-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--blue); padding-bottom: 5px; }
@@ -45,6 +66,7 @@
         .docente-info-main strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: var(--blue); }
         
         .btn-docente-ctrl { cursor: pointer; border: none; background: none; font-size: 15px; opacity: 0.7; transition: 0.2s; padding: 2px; }
+        .btn-docente-ctrl:hover { opacity: 1; transform: scale(1.2); }
         .total-hrs-badge { font-size: 16px; font-weight: bold; color: var(--blue); }
         
         .assigned-list { min-height: 50px; }
@@ -52,11 +74,16 @@
             display: flex; justify-content: space-between; align-items: center; 
             background: #f8f9fa; padding: 10px; margin-bottom: 5px; border-radius: 4px; 
             border-left: 4px solid var(--blue); font-size: 11px; cursor: grab;
+            position: relative;
         }
         
-        .item-details { display: block; font-size: 10px; color: #555; margin-top: 3px; font-weight: bold; }
-        
-        .btn-del-course { color: white !important; background-color: var(--red) !important; border: none; border-radius: 4px; width: 22px; height: 22px; cursor: pointer; font-weight: bold; font-size: 12px; display: flex !important; align-items: center; justify-content: center; margin-left: 10px; }
+        .btn-del-course { 
+            color: white !important; background-color: var(--red) !important; border: none; 
+            border-radius: 4px; width: 22px; height: 22px; cursor: pointer; 
+            font-weight: bold; font-size: 12px; display: flex !important;
+            align-items: center; justify-content: center; margin-left: 10px;
+            flex-shrink: 0;
+        }
 
         .tag-badge { font-size: 9px; padding: 2px 4px; border-radius: 3px; color: white; font-weight: bold; margin-right: 5px; }
         .bg-FULL { background: var(--green) !important; }
@@ -78,7 +105,7 @@
             .total-hrs-badge { display: table-cell !important; text-align: right !important; vertical-align: middle !important; color: #000 !important; font-weight: 900 !important; font-size: 16px !important; width: 20% !important; }
             .assigned-item { border: 1px solid #999 !important; background: white !important; margin-bottom: 4px !important; padding: 8px !important; width: 100% !important; display: flex !important; }
             .tag-badge { color: black !important; border: 1px solid #000 !important; font-weight: bold !important; padding: 2px 4px !important; }
-            .item-details { color: #000 !important; }
+            .bg-FULL, .bg-HP { background: white !important; }
         }
     </style>
 </head>
@@ -109,13 +136,22 @@
         <input type="text" id="nombreDocente" placeholder="Nombre del docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
         <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">+ AÑADIR</button>
         <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ IMPRIMIR</button>
-        <button onclick="limpiarSoloCargas()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">LIMPIAR CURSOS</button>
+        <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
+        <button onclick="limpiarSoloCargas()" style="background:#7f8c8d; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">LIMPIAR CURSOS</button>
         <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">📅 HORARIOS</button>
+        
+        
     </div>
     <div class="docentes-grid" id="gridDocentes"></div>
 </div>
 
 <script>
+    // --- FUNCIÓN CERRAR SESIÓN ---
+    function cerrarSesion() {
+        localStorage.removeItem("accesoPermitido"); // Esto avisa a todas las pestañas
+    window.location.replace("login.html");
+    }
+
     const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();

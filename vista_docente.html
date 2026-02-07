@@ -2,11 +2,39 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+        function verificarYBloquear() {
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("login.html");
+            }
+        }
+        verificarYBloquear();
+        window.addEventListener('storage', (e) => {
+            if (e.key === "accesoPermitido" && !e.newValue) {
+                verificarYBloquear();
+            }
+        });
+    </script>
     <title>Horario por Docente - UNAJMA</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; --green-doc: #38a169; }
+        /* Estilo para la opción activa */
+nav a.active {
+    background-color: rgba(255, 255, 255, 0.2); /* Fondo sutil */
+    border-bottom: 3px solid white; /* Línea indicadora */
+    padding-bottom: 9px; /* Ajuste por el borde */
+    opacity: 1;
+}
+
+/* Ajuste general para que los enlaces se vean como botones */
+nav a {
+    padding: 8px 12px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+        :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; --green-doc: #38a169; --red: #e53e3e; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
         nav { background: var(--blue); padding: 12px; text-align: center; }
@@ -29,7 +57,6 @@
         .tag-ciclo { font-weight: bold; font-size: 9px; color: var(--blue); margin-bottom: 2px; }
         .tag-tipo { font-size: 9px; font-weight: bold; color: #718096; text-transform: uppercase; }
         
-        /* Estilo para el Laboratorio Asignado */
         .tag-lab { background: #8e44ad; color: white; padding: 3px 6px; border-radius: 4px; margin-top: 5px; display: inline-block; font-weight: bold; font-size: 10px; border: 1px solid #4b0082; }
         .tag-pendiente { background: #fff5f5; color: #e53e3e; padding: 3px 6px; border-radius: 4px; margin-top: 5px; display: inline-block; font-size: 9px; border: 1px solid #feb2b2; font-weight: bold; }
 
@@ -47,9 +74,10 @@
 
 <nav>
     <a href="horarios.html">Horarios</a>    
-    <a href="vista_docente.html">Horario Docente</a>
+    <a href="vista_docente.html"class="active">Horario Docente</a>
     <a href="laboratorios.html">Asignar Laboratorios</a>
     <a href="vista_laboratorios.html">Vista Ocupación</a>
+    <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
 </nav>
 
 <div class="header">
@@ -79,6 +107,28 @@
 </div>
 
 <script>
+    function resaltarMenuActivo() {
+    const paginaActual = window.location.pathname.split("/").pop();
+    const enlaces = document.querySelectorAll('nav a');
+
+    enlaces.forEach(enlace => {
+        // Si el href coincide con el nombre del archivo actual
+        if (enlace.getAttribute('href') === paginaActual) {
+            enlace.classList.add('active');
+        } else {
+            enlace.classList.remove('active');
+        }
+    });
+}
+
+// Ejecutar al cargar la página
+window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
+    // --- FUNCIÓN CERRAR SESIÓN ---
+    function cerrarSesion() {
+        localStorage.removeItem("accesoPermitido");
+        window.location.replace("login.html");
+    }
+
     const firebaseConfig = { 
         apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", 
         authDomain: "carga-docente.firebaseapp.com", 
@@ -94,7 +144,6 @@
     const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
 
     window.onload = async () => {
-        // Cargar lista de docentes para el selector
         const docs = await db.collection("planificacion").doc("lista_docentes").get();
         if(docs.exists) {
             docentes = docs.data().docentes || [];
@@ -106,8 +155,6 @@
                 sel.appendChild(opt);
             });
         }
-        
-        // Cargar horarios generales (donde están guardados los laboratorios)
         const hor = await db.collection("planificacion").doc("horarios").get();
         if(hor.exists) {
             horariosData = hor.data().horariosGeneral || {};
@@ -125,7 +172,6 @@
         }
 
         horas.forEach((h, hIdx) => {
-            // Fila de Receso
             if(hIdx === 6) {
                 cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:15px; font-weight:bold; font-size:10px; text-align:center;">RECESO</td></tr>`;
             }
@@ -133,11 +179,8 @@
             let row = `<tr><td class="hour-cell">${h}</td>`;
             for(let d=1; d<=5; d++) {
                 const ocupacion = buscarClaseDocente(docenteElegido, hIdx, d);
-                
                 if(ocupacion) {
                     let htmlAmbiente = "";
-                    
-                    // Lógica de visualización de Laboratorio
                     if (ocupacion.tipo === "HP") {
                         htmlAmbiente = ocupacion.lab 
                             ? `<div class="tag-lab">📍 ${ocupacion.lab}</div>` 
@@ -145,7 +188,6 @@
                     } else {
                         htmlAmbiente = '<div class="tag-tipo" style="color:#718096; margin-top:5px;">Aula Teórica</div>';
                     }
-
                     row += `<td>
                         <div class="class-block">
                             <div class="tag-ciclo">CICLO ${ocupacion.ciclo}</div>
@@ -165,8 +207,6 @@
     function buscarClaseDocente(nombreDocente, horaIdx, diaIdx) {
         let encontrado = null;
         const key = `${horaIdx}-${diaIdx}`;
-        
-        // Recorrer todos los ciclos para encontrar las clases del docente
         Object.keys(horariosData).forEach(ciclo => {
             const bloques = horariosData[ciclo][key];
             if(bloques && Array.isArray(bloques)) {
@@ -175,7 +215,7 @@
                         encontrado = { 
                             ciclo: ciclo, 
                             curso: b.curso, 
-                            tipo: b.subTipo || b.tipo, // Soporte para ambos nombres de propiedad
+                            tipo: b.subTipo || b.tipo,
                             lab: b.lab || null 
                         };
                     }

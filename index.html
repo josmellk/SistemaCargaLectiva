@@ -2,6 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+        function verificarYBloquear() {
+        if (!localStorage.getItem("accesoPermitido")) {
+            window.location.replace("login.html");
+        }
+    }
+
+    // Bloqueo inicial
+    verificarYBloquear();
+
+    // Escuchar si se cierra sesión en otra pestaña
+    window.addEventListener('storage', (e) => {
+        if (e.key === "accesoPermitido" && !e.newValue) {
+            verificarYBloquear();
+        }
+    });
+    </script>
     <title>Planificador Académico - Ingeniería de Sistemas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -71,6 +88,7 @@
             <button class="btn-icon" style="background: var(--green); color: white;" onclick="window.print()">🖨️ Imprimir Reporte</button>
             <button class="btn-icon btn-clear" onclick="limpiarTodo()">Limpiar Todo</button>
             <button class="btn-icon" style="background: #2c3e50; color: white;" onclick="abrirCargaLectiva()">👨‍🏫 Carga Docente</button>
+            <button class="btn-icon" style="background: #e74c3c; color: white;" onclick="cerrarSesion()">❌ Cerrar Sesión</button>
         </div>
     </div>
     
@@ -132,6 +150,12 @@
 </div>
 
 <script>
+    // --- FUNCIÓN CERRAR SESIÓN ---
+    function cerrarSesion() {
+        localStorage.removeItem("accesoPermitido"); // Esto avisa a todas las pestañas
+    window.location.replace("login.html");
+    }
+
     const firebaseConfig = {
         apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc",
         authDomain: "carga-docente.firebaseapp.com",
@@ -150,7 +174,7 @@
     const ROMANOS = ["", "I","II", "III","IV", "V","VI", "VII","VIII", "IX","X"];
     const LISTA_16_CURSOS = ["REDACCION UNIVERSITARIA Y ORATORIA", "INGLES", "REALIDAD REGIONAL Y NACIONAL", "EXPRESION ARTISTICA", "DIBUJO DE INGENIERIA", "MATEMATICA BASICA I", "INGLES TECNICO", "INGENIERIA ECONOMICA", "MATEMATICA BASICA II", "CALCULO DIFERENCIAL E INTEGRAL", "CALCULO MULTIVARIABLE", "FISICA GENERAL", "COSTOS Y PRESUPUESTOS", "ESTADISTICA Y PROBABILIDADES", "ECUACIONES DIFERENCIALES", "ESTADISTICA INFERENCIAL"];
 
-    const clean = (t) => t ? t.toString().replace(/[^a-zA-Z0-9]/g,"").trim().toUpperCase() : "";
+    const clean = (t) => t ? t.toString().replace(/[^a-zA-Z0-9]/g,"").trim() : "";
     const cleanNombre = (t) => t ? t.toString().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 
     window.addEventListener('DOMContentLoaded', async () => {

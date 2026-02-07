@@ -2,10 +2,38 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+        function verificarYBloquear() {
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("login.html");
+            }
+        }
+        verificarYBloquear();
+        window.addEventListener('storage', (e) => {
+            if (e.key === "accesoPermitido" && !e.newValue) {
+                verificarYBloquear();
+            }
+        });
+    </script>
     <title>Gestión de Laboratorios UNAJMA - 2026</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
+        /* Estilo para la opción activa */
+nav a.active {
+    background-color: rgba(255, 255, 255, 0.2); /* Fondo sutil */
+    border-bottom: 3px solid white; /* Línea indicadora */
+    padding-bottom: 9px; /* Ajuste por el borde */
+    opacity: 1;
+}
+
+/* Ajuste general para que los enlaces se vean como botones */
+nav a {
+    padding: 8px 12px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
         :root { --blue: #1a3a5a; --bg: #f4f7f9; --red: #e53e3e; --green: #38a169; --purple: #8e44ad; --orange: #d35400; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         nav { background: var(--blue); padding: 12px; text-align: center; flex-shrink: 0; }
@@ -41,8 +69,9 @@
 <nav>
      <a href="horarios.html">Horarios</a>    
     <a href="vista_docente.html">Horario Docente</a>
-    <a href="laboratorios.html">Asignar Laboratorios</a>
+    <a href="laboratorios.html"class="active">Asignar Laboratorios</a>
     <a href="vista_laboratorios.html">Vista Ocupación</a>
+    <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
 </nav>
 
 <div class="layout">
@@ -80,6 +109,28 @@
 </div>
 
 <script>
+    function resaltarMenuActivo() {
+    const paginaActual = window.location.pathname.split("/").pop();
+    const enlaces = document.querySelectorAll('nav a');
+
+    enlaces.forEach(enlace => {
+        // Si el href coincide con el nombre del archivo actual
+        if (enlace.getAttribute('href') === paginaActual) {
+            enlace.classList.add('active');
+        } else {
+            enlace.classList.remove('active');
+        }
+    });
+}
+
+// Ejecutar al cargar la página
+window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
+    // --- FUNCIÓN CERRAR SESIÓN ---
+    function cerrarSesion() {
+        localStorage.removeItem("accesoPermitido");
+        window.location.replace("login.html");
+    }
+
     const firebaseConfig = { 
         apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", 
         authDomain: "carga-docente.firebaseapp.com", 
@@ -106,7 +157,6 @@
         renderListaLabs(); renderHorarioConCursos();
     };
 
-    // --- DETECCIÓN DE CURSO DIVIDIDO O COMPLETO ---
     function obtenerDemandaReal(codigoCurso) {
         let docentes = new Set();
         ciclos.forEach(c => {
@@ -116,11 +166,9 @@
             });
         });
         const totalAlumnos = censoSincronizado[codigoCurso]?.total || 0;
-        // Si hay más de 1 docente, se asume división al 50%. Si es docente único, 100%.
         return docentes.size > 1 ? Math.ceil(totalAlumnos / 2) : totalAlumnos;
     }
 
-    // --- DRAG & DROP ---
     function onDragStart(ev, labNombre) { ev.dataTransfer.setData("text", labNombre); }
     function onDragOver(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
     function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
@@ -135,7 +183,6 @@
         renderHorarioConCursos();
     }
 
-    // --- OPTIMIZACIÓN POR BLOQUE CONTINUO ---
     async function optimizarBloquesContinuos() {
         if(!confirm("🤖 Optimizando... Se respetará el mismo lab para horas seguidas del docente.")) return;
         ciclos.forEach(c => { if(horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); });
@@ -189,7 +236,7 @@
                     const lab = laboratorios.find(l => l.nombre === inf.lab);
                     const dif = lab ? lab.capacidad - demanda : 0;
                     row += `<div class="course-block" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${key}', ${idx})">
-                        <span class="course-title">${inf.curso}</span>
+                        <span class="course-title">${inf.course || inf.curso}</span>
                         <span style="font-size:8px; color:#666;">👤 ${inf.docente} | Demanda: ${demanda}</span>
                         ${inf.subTipo === "HP" ? `
                             ${inf.lab ? `
