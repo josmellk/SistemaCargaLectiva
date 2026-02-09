@@ -20,20 +20,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
         /* Estilo para la opción activa */
-nav a.active {
-    background-color: rgba(255, 255, 255, 0.2); /* Fondo sutil */
-    border-bottom: 3px solid white; /* Línea indicadora */
-    padding-bottom: 9px; /* Ajuste por el borde */
-    opacity: 1;
-}
+        nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-bottom: 3px solid white;
+            padding-bottom: 9px;
+            opacity: 1;
+        }
 
-/* Ajuste general para que los enlaces se vean como botones */
-nav a {
-    padding: 8px 12px;
-    border-radius: 4px 4px 0 0;
-    transition: all 0.3s ease;
-    display: inline-block;
-}
+        nav a {
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
         :root { --blue: #1a3a5a; --bg: #f4f7f9; --border: #cbd5e0; --red: #e53e3e; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
@@ -85,7 +85,7 @@ nav a {
             <option value="3">MIÉRCOLES</option>
             <option value="4">JUEVES</option>
             <option value="5">VIERNES</option>
-        </select>
+            <option value="6">SÁBADO</option> </select>
         <button onclick="window.print()" style="margin-left:10px; padding:10px; cursor:pointer;">🖨️ Reporte PDF</button>
     </div>
 </div>
@@ -103,22 +103,19 @@ nav a {
 
 <script>
     function resaltarMenuActivo() {
-    const paginaActual = window.location.pathname.split("/").pop();
-    const enlaces = document.querySelectorAll('nav a');
+        const paginaActual = window.location.pathname.split("/").pop();
+        const enlaces = document.querySelectorAll('nav a');
+        enlaces.forEach(enlace => {
+            if (enlace.getAttribute('href') === paginaActual) {
+                enlace.classList.add('active');
+            } else {
+                enlace.classList.remove('active');
+            }
+        });
+    }
 
-    enlaces.forEach(enlace => {
-        // Si el href coincide con el nombre del archivo actual
-        if (enlace.getAttribute('href') === paginaActual) {
-            enlace.classList.add('active');
-        } else {
-            enlace.classList.remove('active');
-        }
-    });
-}
+    window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
 
-// Ejecutar al cargar la página
-window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
-    // --- FUNCIÓN CERRAR SESIÓN ---
     function cerrarSesion() {
         localStorage.removeItem("accesoPermitido");
         window.location.replace("login.html");

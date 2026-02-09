@@ -4,40 +4,36 @@
     <meta charset="UTF-8">
     <script>
         function verificarYBloquear() {
-        if (!localStorage.getItem("accesoPermitido")) {
-            window.location.replace("login.html");
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("login.html");
+            }
         }
-    }
-
-    // Bloqueo inicial
-    verificarYBloquear();
-
-    // Escuchar si se cierra sesión en otra pestaña
-    window.addEventListener('storage', (e) => {
-        if (e.key === "accesoPermitido" && !e.newValue) {
-            verificarYBloquear();
-        }
-    });
+        verificarYBloquear();
+        window.addEventListener('storage', (e) => {
+            if (e.key === "accesoPermitido" && !e.newValue) {
+                verificarYBloquear();
+            }
+        });
     </script>
     <title>Horario Académico - Gestión de Docentes</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
         /* Estilo para la opción activa */
-nav a.active {
-    background-color: rgba(255, 255, 255, 0.2); /* Fondo sutil */
-    border-bottom: 3px solid white; /* Línea indicadora */
-    padding-bottom: 9px; /* Ajuste por el borde */
-    opacity: 1;
-}
+        nav a.active {
+            background-color: rgba(255, 255, 255, 0.2); 
+            border-bottom: 3px solid white; 
+            padding-bottom: 9px; 
+            opacity: 1;
+        }
 
-/* Ajuste general para que los enlaces se vean como botones */
-nav a {
-    padding: 8px 12px;
-    border-radius: 4px 4px 0 0;
-    transition: all 0.3s ease;
-    display: inline-block;
-}
+        /* Ajuste general para que los enlaces se vean como botones */
+        nav a {
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
         :root { --blue: #1a3a5a; --bg: #f8f9fa; --border: #cbd5e0; --red: #e53e3e; --save: #2d3748; --green: #27ae60; --light-blue: #3182ce; --warning: #f39c12; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
@@ -112,12 +108,11 @@ nav a {
 <body>
 
 <nav id="mainNav">
-    <a href="horarios.html"class="active">Horarios</a>    
+    <a href="horarios.html" class="active">Horarios</a>    
     <a href="vista_docente.html">Horario Docente</a>
     <a href="laboratorios.html">Asignar Laboratorios</a>
     <a href="vista_laboratorios.html">Vista Ocupación</a>
     <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
-    
 </nav>
 
 <div class="layout-container">
@@ -156,12 +151,11 @@ nav a {
             <div class="print-actions">
                 <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
                 <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
-                
             </div>
         </div>
         <div class="schedule-container">
             <table class="schedule-table">
-                <thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead>
+                <thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SÁBADO</th></tr></thead>
                 <tbody id="cuerpoHorario"></tbody>
             </table>
         </div>
@@ -177,25 +171,22 @@ nav a {
 
 <script>
     function resaltarMenuActivo() {
-    const paginaActual = window.location.pathname.split("/").pop();
-    const enlaces = document.querySelectorAll('nav a');
+        const paginaActual = window.location.pathname.split("/").pop();
+        const enlaces = document.querySelectorAll('nav a');
+        enlaces.forEach(enlace => {
+            if (enlace.getAttribute('href') === paginaActual) {
+                enlace.classList.add('active');
+            } else {
+                enlace.classList.remove('active');
+            }
+        });
+    }
 
-    enlaces.forEach(enlace => {
-        // Si el href coincide con el nombre del archivo actual
-        if (enlace.getAttribute('href') === paginaActual) {
-            enlace.classList.add('active');
-        } else {
-            enlace.classList.remove('active');
-        }
-    });
-}
-
-// Ejecutar al cargar la página
-window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
-    // --- FUNCIÓN CERRAR SESIÓN ---
+    window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
+    
     function cerrarSesion() {
-    localStorage.removeItem("accesoPermitido"); // Esto avisa a todas las pestañas
-    window.location.replace("login.html");
+        localStorage.removeItem("accesoPermitido"); 
+        window.location.replace("login.html");
     }
 
     const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
@@ -277,11 +268,11 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
     }
 
     function generarTablaBase() {
-        const cuerpo = document.getElementById('cuerpoHorario'), esM = (indiceCicloGeneral % 2 === 0);
+        const cuerpo = document.getElementById('cuerpoHorario');
         cuerpo.innerHTML = "";
-        hMañana.forEach((h, i) => { cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("") + `</tr>`; });
-        cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; font-weight:bold; height:25px; font-size:11px; text-align:center;">RECESO</td></tr>`;
-        hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
+        hMañana.forEach((h, i) => { cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5,6].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("") + `</tr>`; });
+        cuerpo.innerHTML += `<tr><td colspan="7" style="background:#cbd5e0; font-weight:bold; height:25px; font-size:11px; text-align:center;">RECESO</td></tr>`;
+        hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5,6].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
     }
 
     function obtenerDocenteActualizado(codigo, subTipoBloque, nombreGuardado) {
@@ -378,8 +369,8 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
         printContainer.innerHTML = ""; 
         let paginas = [];
         let hayM = false, hayT = false;
-        for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-        for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
+        for(let i=0; i<6; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
+        for(let i=6; i<12; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
         if(hayM) paginas.push({turno: "MAÑANA", horas: hMañana, offset: 0});
         if(hayT) paginas.push({turno: "TARDE", horas: hTarde, offset: 6});
         if(paginas.length === 0) {
@@ -396,8 +387,8 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
         ROMANOS.forEach((cic) => {
             const data = horariosPorCiclo[cic] || {};
             let hayM = false, hayT = false;
-            for(let i=0; i<6; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-            for(let i=6; i<12; i++) for(let d=1; d<=5; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
+            for(let i=0; i<6; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
+            for(let i=6; i<12; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
             if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
             if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
         });
@@ -410,11 +401,11 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
             <h1>HORARIO ACADÉMICO - CICLO ${ciclo}</h1>
             <h2>TURNO: ${nombreTurno}</h2>
             <table class="schedule-table">
-                <thead><tr><th style="width:85px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th></tr></thead>
+                <thead><tr><th style="width:85px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SABADO</th></tr></thead>
                 <tbody>`;
         horasTurno.forEach((h, idx) => {
             const realIdx = idx + offset; html += `<tr><td class="hour-cell">${h}</td>`;
-            for (let dia = 1; dia <= 5; dia++) {
+            for (let dia = 1; dia <= 6; dia++) {
                 const key = `${realIdx}-${dia}`, bloques = dataCiclo[key] || [];
                 html += `<td><div class="diagonal-container">` + bloques.map(inf => {
                     const nombreFin = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);

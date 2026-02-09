@@ -20,20 +20,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
         /* Estilo para la opción activa */
-nav a.active {
-    background-color: rgba(255, 255, 255, 0.2); /* Fondo sutil */
-    border-bottom: 3px solid white; /* Línea indicadora */
-    padding-bottom: 9px; /* Ajuste por el borde */
-    opacity: 1;
-}
+        nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-bottom: 3px solid white;
+            padding-bottom: 9px;
+            opacity: 1;
+        }
 
-/* Ajuste general para que los enlaces se vean como botones */
-nav a {
-    padding: 8px 12px;
-    border-radius: 4px 4px 0 0;
-    transition: all 0.3s ease;
-    display: inline-block;
-}
+        /* Ajuste general para que los enlaces se vean como botones */
+        nav a {
+            padding: 8px 12px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
         :root { --blue: #1a3a5a; --bg: #f4f7f9; --red: #e53e3e; --green: #38a169; --purple: #8e44ad; --orange: #d35400; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         nav { background: var(--blue); padding: 12px; text-align: center; flex-shrink: 0; }
@@ -69,7 +69,7 @@ nav a {
 <nav>
      <a href="horarios.html">Horarios</a>    
     <a href="vista_docente.html">Horario Docente</a>
-    <a href="laboratorios.html"class="active">Asignar Laboratorios</a>
+    <a href="laboratorios.html" class="active">Asignar Laboratorios</a>
     <a href="vista_laboratorios.html">Vista Ocupación</a>
     <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
 </nav>
@@ -101,7 +101,7 @@ nav a {
         </div>
         <table class="schedule-table">
             <thead>
-                <tr><th>HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th></tr>
+                <tr><th>HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SÁBADO</th></tr>
             </thead>
             <tbody id="cuerpoLab"></tbody>
         </table>
@@ -110,22 +110,19 @@ nav a {
 
 <script>
     function resaltarMenuActivo() {
-    const paginaActual = window.location.pathname.split("/").pop();
-    const enlaces = document.querySelectorAll('nav a');
+        const paginaActual = window.location.pathname.split("/").pop();
+        const enlaces = document.querySelectorAll('nav a');
+        enlaces.forEach(enlace => {
+            if (enlace.getAttribute('href') === paginaActual) {
+                enlace.classList.add('active');
+            } else {
+                enlace.classList.remove('active');
+            }
+        });
+    }
 
-    enlaces.forEach(enlace => {
-        // Si el href coincide con el nombre del archivo actual
-        if (enlace.getAttribute('href') === paginaActual) {
-            enlace.classList.add('active');
-        } else {
-            enlace.classList.remove('active');
-        }
-    });
-}
+    window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
 
-// Ejecutar al cargar la página
-window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
-    // --- FUNCIÓN CERRAR SESIÓN ---
     function cerrarSesion() {
         localStorage.removeItem("accesoPermitido");
         window.location.replace("login.html");
@@ -188,7 +185,7 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
         ciclos.forEach(c => { if(horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); });
         const labsDesc = [...laboratorios].sort((a, b) => b.capacidad - a.capacidad);
 
-        for (let d = 1; d <= 5; d++) {
+        for (let d = 1; d <= 6; d++) { // Actualizado a 6 para incluir Sábado
             for (let i = 0; i < horas.length; i++) {
                 const key = `${i}-${d}`;
                 let reqs = [];
@@ -225,9 +222,9 @@ window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
         const dataCiclo = horariosData[cic] || {};
         cuerpo.innerHTML = "";
         horas.forEach((h, i) => {
-            if(i === 6) cuerpo.innerHTML += `<tr><td colspan="6" style="background:#cbd5e0; height:10px; font-size:8px; text-align:center;">RECESO</td></tr>`;
+            if(i === 6) cuerpo.innerHTML += `<tr><td colspan="7" style="background:#cbd5e0; height:10px; font-size:8px; text-align:center;">RECESO</td></tr>`;
             let row = `<tr><td class="hour-cell">${h}</td>`;
-            for(let d=1; d<=5; d++) {
+            for(let d=1; d<=6; d++) { // Actualizado a 6 para incluir Sábado
                 const key = `${i}-${d}`;
                 const bloques = dataCiclo[key] || [];
                 row += `<td>`;
