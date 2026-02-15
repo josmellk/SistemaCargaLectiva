@@ -7,7 +7,7 @@
         function verificarYBloquear() {
             try {
                 if (!localStorage.getItem("accesoPermitido")) {
-                    window.location.replace("login.html");
+                    window.location.replace("index.html");
                 }
             } catch (e) {
                 console.error("Error al verificar acceso:", e);

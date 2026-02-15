@@ -154,7 +154,7 @@
         // Verificación de sesión
         function verificarSesion() {
             if (!localStorage.getItem("accesoPermitido")) {
-                window.location.replace("login.html");
+                window.location.replace("index.html");
             }
         }
         verificarSesion();
@@ -168,7 +168,7 @@
         function logout() {
             if (confirm("¿Seguro que deseas cerrar sesión?")) {
                 localStorage.removeItem("accesoPermitido");
-                window.location.replace("login.html");
+                window.location.replace("index.html");
             }
         }
     </script>
@@ -289,7 +289,7 @@
     <div class="main-content">
         <!-- IFRAMES -->
         <!-- Se cargan en 'src' pero se ocultan con CSS. Esto mantiene el estado al cambiar de pestaña. -->
-        <iframe id="tab-index" src="index.html" class="iframe-container active"></iframe>
+        <iframe id="tab-index" src="planificador.html" class="iframe-container active"></iframe>
         <iframe id="tab-carga" src="carga_docente.html" class="iframe-container"></iframe>
         <iframe id="tab-horarios" src="horarios.html" class="iframe-container"></iframe>
         <iframe id="tab-vista-docente" src="vista_docente.html" class="iframe-container"></iframe>

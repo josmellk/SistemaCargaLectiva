@@ -1,6 +1,6 @@
 function verificarYBloquear() {
     if (!localStorage.getItem("accesoPermitido")) {
-        window.location.replace("login.html");
+        window.location.replace("index.html");
     }
 }
 
@@ -16,5 +16,5 @@ window.addEventListener('storage', (e) => {
 
 function cerrarSesion() {
     localStorage.removeItem("accesoPermitido"); // Esto avisa a todas las pestañas
-    window.location.replace("login.html");
+    window.location.replace("index.html");
 }

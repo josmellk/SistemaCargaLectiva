@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <script>
+        function verificarYBloquear() {
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("index.html");
+            }
+        }
+
+        // Bloqueo inicial
+        verificarYBloquear();
+
+        // Escuchar si se cierra sesión en otra pestaña
+        window.addEventListener('storage', (e) => {
+            if (e.key === "accesoPermitido" && !e.newValue) {
+                verificarYBloquear();
+            }
+        });
+    </script>
+    <title>Planificador Académico - Ingeniería de Sistemas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --blue: #1a3a5a;
+            --light-blue: #3498db;
+            --green: #27ae60;
+            --orange: #e67e22;
+            --purple: #8e44ad;
+            --dark-orange: #d35400;
+            --c1: #e8f4fd;
+            --c2: #fef9e7;
+            --c3: #eafaf1;
+            --c4: #f4ecf7;
+            --c5: #fdf2e9;
+            --c6: #e8f8f5;
+            --c7: #fef5e7;
+            --c8: #ebf5fb;
+            --c9: #fdedec;
+            --c10: #f4f6f7;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f7f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1550px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sticky-controls {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: white;
+            margin: -25px -25px 15px -25px;
+            /* Reduced bottom margin */
+            padding: 15px 20px 10px 20px;
+            /* Reduced vertical padding */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid #eee;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            /* Reduced from 20px */
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-actions h1 {
+            margin: 0;
+            color: var(--blue);
+            font-size: 18px;
+            /* Reduced from 24px */
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .setup {
+            display: flex;
+            /* Changed from grid to flex for compact bar if possible, or tight grid */
+            flex-wrap: wrap;
+            align-items: flex-end;
+            /* Align inputs and button */
+            gap: 10px;
+            /* Reduced gap */
+            background: #ebf2f7;
+            padding: 10px;
+            /* Reduced padding from 20px */
+            border-radius: 8px;
+            margin-bottom: 5px;
+            /* Reduced margin */
+        }
+
+        .setup>div {
+            flex: 1 1 140px;
+            /* Allow shrinking/growing */
+            min-width: 140px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+            /* Reduced margin */
+            color: var(--blue);
+            font-size: 11px;
+            /* Smaller font */
+        }
+
+        input {
+            width: 100%;
+            padding: 5px;
+            /* Reduced padding */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 12px;
+            /* Smaller font */
+        }
+
+        .file-status {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .file-loaded {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .file-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--light-blue), var(--blue));
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .btn-calc {
+            width: 100%;
+            padding: 8px;
+            /* Reduced padding */
+            background: var(--light-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            /* Reduced font size */
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin-top: 5px;
+        }
+
+        .btn-calc:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-calc:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .bloque-container {
+            margin-top: 30px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .bloque-header {
+            padding: 12px 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-servicios {
+            background: var(--orange);
+        }
+
+        .header-sistemas {
+            background: var(--blue);
+        }
+
+        .header-divisiones {
+            background: var(--purple);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            table-layout: fixed;
+        }
+
+        th {
+            background: #f1f1f1;
+            color: var(--blue);
+            padding: 10px 5px;
+            text-align: center;
+            font-size: 11px;
+            border: 1px solid #ddd;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 8px 4px;
+            border: 1px solid #eee;
+            text-align: center;
+            font-size: 12px;
+            word-wrap: break-word;
+            vertical-align: middle;
+        }
+
+        .col-ciclo {
+            width: 60px;
+        }
+
+        .col-tipo {
+            width: 70px;
+        }
+
+        .col-cod {
+            width: 95px;
+        }
+
+        .col-asig {
+            width: 260px;
+            text-align: left !important;
+            padding-left: 10px;
+        }
+
+        .col-h {
+            width: 35px;
+            font-weight: bold;
+            background: #fcfcfc;
+        }
+
+        .total-val {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--blue);
+        }
+
+        .sug-badge {
+            padding: 5px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            display: block;
+            line-height: 1.1;
+        }
+
+        .sug-full {
+            background: var(--dark-orange);
+        }
+
+        .sug-prac {
+            background: var(--purple);
+        }
+
+        .sug-unico {
+            background: var(--green);
+        }
+
+        .ciclo-I {
+            background-color: var(--c1);
+        }
+
+        .ciclo-II {
+            background-color: var(--c2);
+        }
+
+        .ciclo-III {
+            background-color: var(--c3);
+        }
+
+        .ciclo-IV {
+            background-color: var(--c4);
+        }
+
+        .ciclo-V {
+            background-color: var(--c5);
+        }
+
+        .ciclo-VI {
+            background-color: var(--c6);
+        }
+
+        .ciclo-VII {
+            background-color: var(--c7);
+        }
+
+        .ciclo-VIII {
+            background-color: var(--c8);
+        }
+
+        .ciclo-IX {
+            background-color: var(--c9);
+        }
+
+        .ciclo-X {
+            background-color: var(--c10);
+        }
+
+        .new-cycle-row {
+            border-top: 3px solid var(--light-blue) !important;
+        }
+
+        @media print {
+
+            nav,
+            .setup,
+            .btn-calc,
+            .action-btns {
+                display: none !important;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border: none;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="container">
+            <div class="sticky-controls">
+                <div class="header-actions">
+                    <h1>Planificador de Demanda Académica</h1>
+                    <div class="action-btns">
+                        <button class="btn-icon" style="background: var(--green); color: white;"
+                            onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> Imprimir Reporte</button>
+                        <button class="btn-icon btn-clear" onclick="limpiarTodo()"><i class="fa-solid fa-eraser"></i>
+                            Limpiar
+                            Todo</button>
+
+                    </div>
+                </div>
+
+                <div class="setup">
+                    <div>
+                        <label>1. Malla Curricular</label>
+                        <input type="file" id="mallaFile" accept=".xlsx,.xls">
+                        <span class="file-status file-pending" id="statusMalla">Pendiente</span>
+                        <button onclick="eliminarMallaGuardada()" id="btnEliminarMalla"
+                            style="display:none; margin-top:5px; padding:5px 10px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Eliminar
+                            memoria</button>
+                        <button onclick="descargarMalla()" id="btnDescargarMalla"
+                            style="display:none; margin-top:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
+                            <i class="fa-solid fa-download"></i> Descargar</button>
+                    </div>
+                    <div>
+                        <label>2. Registro de Notas</label>
+                        <input type="file" id="notasFile" accept=".xlsx,.xls">
+                        <span class="file-status file-pending" id="statusNotas">Pendiente</span>
+                        <button onclick="descargarNotas()" id="btnDescargarNotas"
+                            style="display:none; margin-top:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
+                            <i class="fa-solid fa-download"></i> Descargar</button>
+                    </div>
+                    <div><label>Ingresantes</label><input type="number" id="ingresantes" value="40" class="small-box">
+                    </div>
+                    <div><label>Div. Práctica (≥)</label><input type="number" id="divPrac" value="35" class="small-box">
+                    </div>
+                    <div><label>Div. Completa (>)</label><input type="number" id="divFull" value="47" class="small-box">
+                    </div>
+                </div>
+                <style>
+                    /* Custom override for small inputs to fit in one line */
+                    .setup>div:has(#ingresantes),
+                    .setup>div:has(#divPrac),
+                    .setup>div:has(#divFull) {
+                        flex: 0 1 80px !important;
+                        /* Force small width */
+                        min-width: 80px !important;
+                    }
+                </style>
+                <button onclick="procesar()" class="btn-calc" id="btnProcesar" disabled>GENERAR PLANIFICACIÓN</button>
+            </div>
+            <br><br>
+
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Cursos</div>
+                    <div class="stat-value" id="statCursos">-</div>
+                </div>
+                <div class="stat-card" style="background: var(--green);">
+                    <div class="stat-label">Con División</div>
+                    <div class="stat-value" id="statDivisiones">-</div>
+                </div>
+                <div class="stat-card" style="background: var(--orange);">
+                    <div class="stat-label">Estudiantes</div>
+                    <div class="stat-value" id="statEstudiantes">-</div>
+                </div>
+                <div class="stat-card" style="background: var(--purple);">
+                    <div class="stat-label">Críticos</div>
+                    <div class="stat-value" id="statCriticos">-</div>
+                </div>
+            </div>
+
+            <div id="resWrapper" style="display:none; margin-top: 20px;">
+                <div class="bloque-container" style="border-color: var(--orange);">
+                    <div class="bloque-header header-servicios"><span>BLOQUE 1: SERVICIOS</span><span
+                            id="countServicios">0</span></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-ciclo">Ciclo</th>
+                                <th class="col-cod">Cód.</th>
+                                <th class="col-asig">Asignatura</th>
+                                <th class="col-h">HT</th>
+                                <th class="col-h">HP</th>
+                                <th class="col-h">TH</th>
+                                <th>Base</th>
+                                <th>Rep.</th>
+                                <th>Total</th>
+                                <th>Planificación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyServicios"></tbody>
+                    </table>
+                </div>
+
+                <div class="bloque-container" style="border-color: var(--blue); margin-top: 40px;">
+                    <div class="bloque-header header-sistemas"><span>BLOQUE 2: ESPECIALIDAD</span><span
+                            id="countSistemas">0</span></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-ciclo">Ciclo</th>
+                                <th class="col-tipo">Tipo</th>
+                                <th class="col-cod">Cód.</th>
+                                <th class="col-asig">Asignatura</th>
+                                <th class="col-h">HT</th>
+                                <th class="col-h">HP</th>
+                                <th class="col-h">TH</th>
+                                <th>Base</th>
+                                <th>Rep.</th>
+                                <th>Total</th>
+                                <th>Planificación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodySistemas"></tbody>
+                    </table>
+                </div>
+
+                <div class="bloque-container" style="border-color: var(--purple); margin-top: 40px; border-width: 3px;">
+                    <div class="bloque-header header-divisiones"><span>RESUMEN DIVISIONES (HORAS HT/HP)</span><span
+                            id="countDivisiones">0</span></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-ciclo">Ciclo</th>
+                                <th class="col-cod">Cód.</th>
+                                <th class="col-asig">Asignatura</th>
+                                <th class="col-h">HT</th>
+                                <th class="col-h">HP</th>
+                                <th>Alumnos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyDivisiones"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // --- FUNCIÓN CERRAR SESIÓN ---
+            function cerrarSesion() {
+                localStorage.removeItem("accesoPermitido"); // Esto avisa a todas las pestañas
+                window.location.replace("index.html");
+            }
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc",
+                authDomain: "carga-docente.firebaseapp.com",
+                projectId: "carga-docente",
+                storageBucket: "carga-docente.firebasestorage.app",
+                messagingSenderId: "994250556754",
+                appId: "1:994250556754:web:ecabed4715e7803542e68b",
+                measurementId: "G-YCBK251ESS"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const storage = firebase.storage();
+
+            let malla = [];
+            let notas = {};
+            let avgCiclo = {};
+            let urls = { malla: null, notas: null };
+            const ROMANOS = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+            const LISTA_16_CURSOS = ["REDACCION UNIVERSITARIA Y ORATORIA", "INGLES", "REALIDAD REGIONAL Y NACIONAL", "EXPRESION ARTISTICA", "DIBUJO DE INGENIERIA", "MATEMATICA BASICA I", "INGLES TECNICO", "INGENIERIA ECONOMICA", "MATEMATICA BASICA II", "CALCULO DIFERENCIAL E INTEGRAL", "CALCULO MULTIVARIABLE", "FISICA GENERAL", "COSTOS Y PRESUPUESTOS", "ESTADISTICA Y PROBABILIDADES", "ECUACIONES DIFERENCIALES", "ESTADISTICA INFERENCIAL"];
+
+            const clean = (t) => t ? t.toString().replace(/[^a-zA-Z0-9]/g, "").trim() : "";
+            const cleanNombre = (t) => t ? t.toString().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+
+            window.addEventListener('DOMContentLoaded', async () => {
+                const doc = await db.collection("planificacion").doc("config_general").get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    malla = data.mallaParaDocentes || [];
+                    notas = data.notasProcesadas || {};
+                    avgCiclo = data.avgCicloProcesado || {};
+                    actualizarEstadoArchivo('Malla', malla.length > 0);
+                    actualizarEstadoArchivo('Notas', Object.keys(notas).length > 0);
+
+                    urls = data.urls || { malla: null, notas: null };
+
+                    if (urls.malla) document.getElementById('btnDescargarMalla').style.display = 'inline-block';
+                    if (malla.length > 0) document.getElementById('btnEliminarMalla').style.display = 'inline-block';
+
+                    if (urls.notas) document.getElementById('btnDescargarNotas').style.display = 'inline-block';
+
+                    const s = data.stats;
+                    if (s) {
+                        document.getElementById('tbodyServicios').innerHTML = s.serv;
+                        document.getElementById('tbodySistemas').innerHTML = s.sist;
+                        document.getElementById('tbodyDivisiones').innerHTML = s.divi;
+                        document.getElementById('statCursos').textContent = s.c1;
+                        document.getElementById('statDivisiones').textContent = s.c2;
+                        document.getElementById('statEstudiantes').textContent = s.c3;
+                        document.getElementById('statCriticos').textContent = s.c4;
+                        document.getElementById('countServicios').textContent = s.n1;
+                        document.getElementById('countSistemas').textContent = s.n2;
+                        document.getElementById('countDivisiones').textContent = s.n3;
+                        document.getElementById('resWrapper').style.display = "block";
+                        document.getElementById('statsGrid').style.display = "grid";
+                    }
+                }
+            });
+
+            function actualizarEstadoArchivo(archivo, estado) {
+                const el = document.getElementById(`status${archivo}`);
+                el.innerHTML = estado ? "<i class='fa-solid fa-check'></i> Cargado" : "<i class='fa-solid fa-clock'></i> Pendiente";
+                el.className = estado ? "file-status file-loaded" : "file-status file-pending";
+                document.getElementById('btnProcesar').disabled = !(malla.length > 0 && Object.keys(notas).length > 0);
+            }
+
+            function leer(e, cb) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const r = new FileReader();
+                r.onload = x => {
+                    const wb = XLSX.read(x.target.result, { type: 'binary' });
+                    cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]));
+                };
+                r.readAsBinaryString(file);
+            }
+
+            async function subirArchivoStorage(file, path) {
+                // TIMEOUT DE 5 SEGUNDOS PARA STORAGE
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+                const upload = async () => {
+                    const ref = storage.ref().child(path);
+                    await ref.put(file);
+                    return await ref.getDownloadURL();
+                };
+
+                try {
+                    return await Promise.race([upload(), timeout]);
+                } catch (e) {
+                    console.error("Error subiendo archivo:", e);
+                    return null;
+                }
+            }
+
+            document.getElementById('mallaFile').addEventListener('change', e => {
+                const file = e.target.files[0];
+                const statusEl = document.getElementById('statusMalla');
+
+                // 1. Mostrar estado cargando
+                statusEl.textContent = "⏳ Procesando...";
+                statusEl.className = "file-status file-pending";
+
+                leer(e, async d => {
+                    malla = d;
+
+                    // 2. Subir a Storage o Firestore (Backup)
+                    if (file) {
+
+                        // ESTRATEGIA: Si es pequeño (< 800KB), usar Firestore DIRECTAMENTE para evitar problemas de CORS/Permisos de Storage
+                        if (file.size < 800000) {
+                            console.log("Archivo Malla pequeño, usando Firestore Backup directo.");
+                            statusEl.textContent = "💾 Guardando...";
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            reader.onload = async () => {
+                                try {
+                                    // Guardamos en 'config_general' para no crear otro doc innecesario si cabe, 
+                                    // pero mejor 'malla_detalle' para ser consistentes y no ensuciar config
+                                    await db.collection("planificacion").doc("malla_detalle").set({ fileBase64: reader.result });
+                                    urls.malla = "FIRESTORE_BACKUP";
+                                    document.getElementById('btnDescargarMalla').style.display = 'inline-block';
+                                    actualizarEstadoArchivo('Malla', true);
+                                } catch (err) {
+                                    console.error(err);
+                                    statusEl.textContent = "❌ Error Guardado";
+                                    alert("Error guardando Malla en BD: " + err.message);
+                                }
+                            };
+                        }
+                        // Si es grande, intentar Storage con Timeout
+                        else {
+                            statusEl.textContent = "☁️ Subiendo...";
+                            let url = await subirArchivoStorage(file, `uploads/malla_${Date.now()}.xlsx`);
+
+                            if (url) {
+                                urls.malla = url;
+                                document.getElementById('btnDescargarMalla').style.display = 'inline-block';
+                                actualizarEstadoArchivo('Malla', true);
+                            } else {
+                                statusEl.textContent = "❌ Error Subida";
+                                alert("No se pudo subir Malla a la nube (Timeout o Permisos) y es muy grande para respaldo local.");
+                                actualizarEstadoArchivo('Malla', true);
+                            }
+                        }
+
+                    } else {
+                        actualizarEstadoArchivo('Malla', true);
+                    }
+                });
+            });
+
+            document.getElementById('notasFile').addEventListener('change', e => {
+                const file = e.target.files[0];
+                const statusEl = document.getElementById('statusNotas');
+
+                // 1. Mostrar estado cargando
+                statusEl.textContent = "⏳ Procesando...";
+                statusEl.className = "file-status file-pending";
+
+                leer(e, async data => {
+                    // Procesar datos
+                    notas = {}; let sums = {};
+                    data.forEach(r => {
+                        let codigo = clean(r["CÓD.ASIG."] || "");
+                        let ciclo = (r["CICLO"] || "").toString().trim();
+                        let colM = Object.keys(r).find(k => k.includes("TOTAL") && k.includes("MATRI"));
+                        if (codigo) {
+                            notas[codigo] = { a: parseInt(r["APROB."] || 0), d: parseInt(r["DESAPR."] || 0) };
+                            if (ciclo && r[colM]) { if (!sums[ciclo]) sums[ciclo] = []; sums[ciclo].push(parseInt(r[colM])); }
+                        }
+                    });
+                    for (let cic in sums) avgCiclo[cic] = Math.round(sums[cic].reduce((a, b) => a + b, 0) / sums[cic].length);
+
+                    // 2. Subir a Storage o Firestore (Backup)
+                    if (file) {
+
+                        // ESTRATEGIA: Si es pequeño (< 800KB), usar Firestore DIRECTAMENTE para evitar problemas de CORS/Permisos de Storage
+                        if (file.size < 800000) {
+                            console.log("Archivo pequeño, usando Firestore Backup directo.");
+                            statusEl.textContent = "💾 Guardando...";
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            reader.onload = async () => {
+                                try {
+                                    await db.collection("planificacion").doc("notas_detalle").set({ fileBase64: reader.result });
+                                    urls.notas = "FIRESTORE_BACKUP";
+                                    document.getElementById('btnDescargarNotas').style.display = 'inline-block';
+                                    actualizarEstadoArchivo('Notas', true);
+                                } catch (err) {
+                                    console.error(err);
+                                    statusEl.textContent = "❌ Error Guardado";
+                                    alert("Error guardando en base de datos: " + err.message);
+                                }
+                            };
+                        }
+                        // Si es grande, intentar Storage con Timeout
+                        else {
+                            statusEl.textContent = "☁️ Subiendo...";
+                            let url = await subirArchivoStorage(file, `uploads/notas_${Date.now()}.xlsx`);
+
+                            if (url) {
+                                urls.notas = url;
+                                document.getElementById('btnDescargarNotas').style.display = 'inline-block';
+                                actualizarEstadoArchivo('Notas', true);
+                            } else {
+                                statusEl.textContent = "❌ Error Subida";
+                                alert("No se pudo subir a la nube (Timeout o Permisos) y es muy grande para respaldo local.");
+                                actualizarEstadoArchivo('Notas', true);
+                            }
+                        }
+
+                    } else {
+                        actualizarEstadoArchivo('Notas', true);
+                    }
+                });
+            });
+
+            function procesar() {
+                const nIng = parseInt(document.getElementById('ingresantes').value);
+                const vPrac = parseInt(document.getElementById('divPrac').value);
+                const vFull = parseInt(document.getElementById('divFull').value);
+                const tbServ = document.getElementById('tbodyServicios');
+                const tbSist = document.getElementById('tbodySistemas');
+                const tbDivi = document.getElementById('tbodyDivisiones');
+                tbServ.innerHTML = ""; tbSist.innerHTML = ""; tbDivi.innerHTML = "";
+
+                let grupos = []; let electivos = {};
+                let censoCursos = {}; // Objeto para sincronizar datos crudos a Firebase
+
+                malla.forEach(c => {
+                    if ((c["TC"] || "").trim() === "E") {
+                        if (!electivos[c["CICLO"]]) electivos[c["CICLO"]] = [];
+                        electivos[c["CICLO"]].push(c);
+                    } else grupos.push({ tipo: "OBLIG", cursos: [c] });
+                });
+                for (let cic in electivos) grupos.push({ tipo: "ELECT", cursos: electivos[cic] });
+                grupos.sort((a, b) => ROMANOS.indexOf(a.cursos[0]["CICLO"]) - ROMANOS.indexOf(b.cursos[0]["CICLO"]));
+
+                let uCServ = "", uCSist = "";
+                let totalCursos = grupos.length, conDivision = 0, totalEstudiantes = 0, cursosCriticos = 0;
+
+                grupos.forEach(g => {
+                    let cP = g.cursos[0], cicA = cP["CICLO"];
+                    let base = 0, req = clean(cP["REQUE"] || "");
+                    if (notas[req]) base = notas[req].a;
+                    else if (ROMANOS.indexOf(cicA) === 1) base = nIng;
+                    else base = avgCiclo[ROMANOS[ROMANOS.indexOf(cicA) - 1]] || 0;
+
+                    let rep = g.cursos.reduce((acc, cur) => acc + (notas[clean(cur["CÓD.ASIG."] || "")] ? notas[clean(cur["CÓD.ASIG."] || "")].d : 0), 0);
+                    let total = base + rep; totalEstudiantes += total;
+                    let htSum = g.cursos.reduce((acc, c) => acc + (parseInt(c["HT"]) || 0), 0);
+                    let hpSum = g.cursos.reduce((acc, c) => acc + (parseInt(c["HP"]) || 0), 0);
+
+                    // Sincronización individual por curso para Firebase
+                    g.cursos.forEach(cur => {
+                        const cod = clean(cur["CÓD.ASIG."] || "");
+                        const repCurso = notas[cod] ? notas[cod].d : 0;
+                        censoCursos[cod] = {
+                            ciclo: cicA,
+                            curso: cur["CURSO"],
+                            ht: parseInt(cur["HT"]) || 0,
+                            hp: parseInt(cur["HP"]) || 0,
+                            th: (parseInt(cur["HT"]) || 0) + (parseInt(cur["HP"]) || 0),
+                            base: base,
+                            rep: repCurso,
+                            total: base + repCurso
+                        };
+                    });
+
+                    let pb = "", tieneDiv = false, esFull = false;
+                    if (hpSum > 0 || htSum > 0) {
+                        if (total > vFull) { pb = `<span class="sug-badge sug-full">DIV. COMPLETA</span>`; tieneDiv = true; esFull = true; conDivision++; }
+                        else if (total >= vPrac) { pb = `<span class="sug-badge sug-prac">DIV. PRÁCTICA</span>`; tieneDiv = true; conDivision++; }
+                        else { pb = `<span class="sug-badge sug-unico">GRUPO ÚNICO</span>`; if (total < 15) cursosCriticos++; }
+                    } else { pb = `<span class="sug-badge sug-unico">SOLO TEORÍA</span>`; if (total < 15) cursosCriticos++; }
+
+                    let esServ = LISTA_16_CURSOS.some(n => cleanNombre(cP["CURSO"] || "").includes(n));
+                    let eCls = (esServ ? (cicA !== uCServ ? "new-cycle-row" : "") : (cicA !== uCSist ? "new-cycle-row" : ""));
+                    if (esServ) uCServ = cicA; else uCSist = cicA;
+
+                    let row = `<tr class="ciclo-${cicA} ${eCls}"><td><strong>${cicA}</strong></td>${!esServ ? `<td>${g.tipo}</td>` : ''}<td>${g.cursos.map(c => c["CÓD.ASIG."]).join("<br>")}</td><td class="col-asig">${g.cursos.map(c => c["CURSO"]).join("<br>")}</td><td>${htSum}</td><td>${hpSum}</td><td>${htSum + hpSum}</td><td>${base}</td><td>${rep}</td><td class="total-val">${total}</td><td>${pb}</td></tr>`;
+                    if (esServ) tbServ.innerHTML += row; else tbSist.innerHTML += row;
+                    if (!esServ && tieneDiv) {
+                        tbDivi.innerHTML += `<tr class="ciclo-${cicA}"><td>${cicA}</td><td>${g.cursos.map(c => c["CÓD.ASIG."]).join("<br>")}</td><td class="col-asig">${g.cursos.map(c => c["CURSO"]).join("<br>")}</td><td style="font-weight:bold; color:var(--orange)">${esFull ? htSum : '-'}</td><td style="font-weight:bold; color:var(--purple)">${hpSum}</td><td class="total-val">${total}</td><td>${pb}</td></tr>`;
+                    }
+                });
+
+                const stats = {
+                    serv: tbServ.innerHTML, sist: tbSist.innerHTML, divi: tbDivi.innerHTML,
+                    c1: totalCursos, c2: conDivision, c3: totalEstudiantes, c4: cursosCriticos,
+                    n1: tbServ.children.length, n2: tbSist.children.length, n3: tbDivi.children.length
+                };
+
+                db.collection("planificacion").doc("config_general").set({
+                    mallaParaDocentes: malla,
+                    notasProcesadas: notas,
+                    avgCicloProcesado: avgCiclo,
+                    stats: stats,
+                    censoCursos: censoCursos, // Datos detallados por curso
+                    numIngresantes: nIng,
+                    urls: urls, // Guardar URLs de descarga
+                    ultimaActualizacion: new Date()
+                }).then(() => alert("✅ Planificación y archivos sincronizados."));
+
+                document.getElementById('statCursos').textContent = totalCursos;
+                document.getElementById('statDivisiones').textContent = conDivision;
+                document.getElementById('statEstudiantes').textContent = totalEstudiantes;
+                document.getElementById('statCriticos').textContent = cursosCriticos;
+                document.getElementById('countServicios').textContent = stats.n1;
+                document.getElementById('countSistemas').textContent = stats.n2;
+                document.getElementById('countDivisiones').textContent = stats.n3;
+                document.getElementById('resWrapper').style.display = "block";
+                document.getElementById('statsGrid').style.display = "grid";
+            }
+
+            function limpiarTodo() { if (confirm("¿Borrar todo?")) { db.collection("planificacion").doc("config_general").delete(); localStorage.clear(); location.reload(); } }
+            function abrirCargaLectiva() { if (malla.length === 0) return alert("⚠️ Carga la malla primero."); window.open('carga_docente.html', '_blank'); }
+            function eliminarMallaGuardada() { db.collection("planificacion").doc("config_general").delete(); location.reload(); }
+        </script>
+        <script>
+            async function descargarMalla() {
+                if (urls.malla && urls.malla === "FIRESTORE_BACKUP") {
+                    try {
+                        const doc = await db.collection("planificacion").doc("malla_detalle").get();
+                        if (doc.exists && doc.data().fileBase64) {
+                            const link = document.createElement("a");
+                            link.href = doc.data().fileBase64;
+                            link.download = "Malla_Curricular_Backup.xlsx";
+                            link.click();
+                        } else {
+                            alert("Error: Archivo de respaldo de Malla no encontrado.");
+                        }
+                    } catch (e) { console.error(e); alert("Error descargando respaldo de Malla."); }
+                }
+                else if (urls.malla) window.open(urls.malla, '_blank');
+                else alert("No hay archivo de Malla disponible.");
+            }
+
+            async function descargarNotas() {
+                if (urls.notas && urls.notas === "FIRESTORE_BACKUP") {
+                    try {
+                        const doc = await db.collection("planificacion").doc("notas_detalle").get();
+                        if (doc.exists && doc.data().fileBase64) {
+                            const link = document.createElement("a");
+                            link.href = doc.data().fileBase64;
+                            link.download = "Registro_Notas_Backup.xlsx";
+                            link.click();
+                        } else {
+                            alert("Error: Archivo de respaldo no encontrado.");
+                        }
+                    } catch (e) { console.error(e); alert("Error descargando respaldo."); }
+                }
+                else if (urls.notas) window.open(urls.notas, '_blank');
+                else alert("No hay archivo de Notas disponible.");
+            }
+        </script>
+</body>
+
+</html>
