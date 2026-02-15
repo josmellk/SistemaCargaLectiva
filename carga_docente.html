@@ -850,12 +850,12 @@
                                         type="number" id="blockStartRow" value="3" style="width:50px; padding:4px;">
                                 </div>
                                 <div><label style="font-size:11px; display:block;">Fin Bloque:</label><input
-                                        type="number" id="blockEndRow" value="10" style="width:50px; padding:4px;">
+                                        type="number" id="blockEndRow" value="11" style="width:50px; padding:4px;">
                                 </div>
                             </div>
                             <div style="margin-top:10px;">
                                 <label style="font-size:11px; display:block;">Celda Docente (Dentro):</label>
-                                <input type="text" id="cellDocenteBlock" placeholder="ej. C3"
+                                <input type="text" id="cellDocenteBlock" value="A3" placeholder="ej. A3"
                                     style="width:80px; padding:4px;">
                             </div>
                             <div style="margin-top:5px;">
@@ -870,24 +870,24 @@
                             <legend style="font-size:12px; font-weight:bold; color:var(--green);">2. Mapeo de Columnas
                             </legend>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                                <div><label style="font-size:10px;">N°:</label><input type="text" id="colN"
+                                <div><label style="font-size:10px;">N°:</label><input type="text" id="colN" value="A"
                                         placeholder="A" class="col-input"></div>
                                 <div><label style="font-size:10px;">Cód:</label><input type="text" id="colCodigo"
-                                        placeholder="B" class="col-input"></div>
+                                        value="B" placeholder="B" class="col-input"></div>
                                 <div><label style="font-size:10px;">Curso:</label><input type="text" id="colCurso"
-                                        placeholder="C" class="col-input"></div>
-                                <div><label style="font-size:10px;">HT:</label><input type="text" id="colHT"
-                                        placeholder="F" class="col-input"></div>
-                                <div><label style="font-size:10px;">HP:</label><input type="text" id="colHP"
-                                        placeholder="G" class="col-input"></div>
+                                        value="C" placeholder="C" class="col-input"></div>
+                                <div><label style="font-size:10px;">HT:</label><input type="text" id="colHT" value="D"
+                                        placeholder="D" class="col-input"></div>
+                                <div><label style="font-size:10px;">HP:</label><input type="text" id="colHP" value="E"
+                                        placeholder="E" class="col-input"></div>
                                 <div><label style="font-size:10px;">Total:</label><input type="text" id="colTH"
-                                        placeholder="H" class="col-input"></div>
+                                        value="F" placeholder="F" class="col-input"></div>
                                 <div><label style="font-size:10px;">Créd:</label><input type="text" id="colCred"
-                                        placeholder="I" class="col-input"></div>
+                                        value="G" placeholder="G" class="col-input"></div>
                                 <div><label style="font-size:10px;">Sec:</label><input type="text" id="colGrupo"
-                                        placeholder="J" class="col-input"></div>
+                                        value="H" placeholder="H" class="col-input"></div>
                                 <div><label style="font-size:10px;">Esc:</label><input type="text" id="colEscuela"
-                                        placeholder="K" class="col-input"></div>
+                                        value="I" placeholder="I" class="col-input"></div>
                             </div>
                         </fieldset>
                     </div>
@@ -1446,6 +1446,45 @@
             }
         }
 
+        async function saveConfigToCloud(config) {
+            try {
+                await db.collection("planificacion").doc("config_excel_vertical").set(config, { merge: true });
+                console.log("Configuración Excel guardada en nube.");
+            } catch (e) {
+                console.error("Error guardando config nube:", e);
+            }
+        }
+
+        async function loadConfigFromCloud() {
+            try {
+                const doc = await db.collection("planificacion").doc("config_excel_vertical").get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const setVal = (id, key) => { if (data[key]) document.getElementById(id).value = data[key]; };
+
+                    setVal('blockStartRow', 'blockStartRow');
+                    setVal('blockEndRow', 'blockEndRow');
+                    setVal('cellDocenteBlock', 'cellDocenteBlock');
+                    setVal('rowCursosBlock', 'rowCursosBlock');
+
+                    setVal('colN', 'colN');
+                    setVal('colCodigo', 'colCodigo');
+                    setVal('colCurso', 'colCurso');
+                    setVal('colHT', 'colHT');
+                    setVal('colHP', 'colHP');
+                    setVal('colTH', 'colTH');
+                    setVal('colCred', 'colCred');
+                    setVal('colGrupo', 'colGrupo');
+                    setVal('colEscuela', 'colEscuela');
+
+                    // Actualizar localStorage para estar sincronizados
+                    localStorage.setItem("config_excel_vertical", JSON.stringify(data));
+                }
+            } catch (e) {
+                console.error("Error cargando config nube:", e);
+            }
+        }
+
         async function cleanScheduleForDocente(docName, courseCode = null) {
             try {
                 const horRef = db.collection("planificacion").doc("horarios");
@@ -1483,6 +1522,7 @@
         function abrirModalExcel() {
             document.getElementById('modalConfigExcel').style.display = 'flex';
             checkCloudTemplate(); // Verificar si existe plantilla
+            loadConfigFromCloud(); // Cargar config desde nube (si existe)
 
             const savedConfig = JSON.parse(localStorage.getItem("config_excel_vertical") || "{}");
 
@@ -1698,13 +1738,23 @@
                 return alert("❌ ERROR:\n" + e.message);
             }
 
-
-
-            // 1. Docentes
+            // 1. Docentes y Filtrado
             const nombreFiltro = document.getElementById('nombreDocente').value.trim().toUpperCase();
             let docentesAExportar = docentes;
             if (nombreFiltro) docentesAExportar = docentes.filter(d => d.nombre.includes(nombreFiltro));
             if (docentesAExportar.length === 0) return showToast("No hay docentes.", "error");
+
+            // DIVIDIR DOCENTES (ORDINARIOS vs CONTRATADOS)
+            // Lógica: Primeros 20 -> Ordinarios, Resto -> Contratados
+            let docentesOrdinarios = [];
+            let docentesContratados = [];
+
+            if (docentesAExportar.length <= 20) {
+                docentesOrdinarios = docentesAExportar;
+            } else {
+                docentesOrdinarios = docentesAExportar.slice(0, 20);
+                docentesContratados = docentesAExportar.slice(20);
+            }
 
             // 2. Configuración con VALIDACION
             const getVal = (id) => document.getElementById(id).value.toUpperCase().trim();
@@ -1733,154 +1783,36 @@
             if (!config.colCurso) return alert("Error: Debes indicar al menos la columna del Nombre del Curso.");
 
             localStorage.setItem("config_excel_vertical", JSON.stringify(config));
+            saveConfigToCloud(config); // Guardar en nube
 
-            const BLOCK_HEIGHT = config.blockEndRow - config.blockStartRow + 1;
-            const ROWS_PER_BLOCK_SPACE = BLOCK_HEIGHT; // Sin separación extra, pegaditos si el usuario define bien el bloque con espacio
-
-            showToast(`Generando reporte para ${docentesAExportar.length} docentes...`, "info");
+            showToast(`Generando reporte... Ord:${docentesOrdinarios.length} / Cont:${docentesContratados.length}`, "info");
 
             try {
-                // Modificado: fromDataAsync acepta Blob, File, ArrayBuffer...
                 const workbook = await XlsxPopulate.fromDataAsync(arrayBuffer);
-                const sheet = workbook.sheet(0);
 
-                // Helper para setear valor seguro sin crashear
-                const safeSet = (col, row, val) => {
-                    if (!col) return; // Si no configuró columna, ignorar
-                    try {
-                        sheet.cell(`${col}${row}`).value(val);
-                    } catch (e) {
-                        console.warn(`Error escribiendo en ${col}${row}:`, e);
-                    }
-                };
+                // --- HOJA 1: ORDINARIOS ---
+                // Intentar buscar hoja 'ORDINARIOS', sino usar la primera (índice 0)
+                let sheetOrdinarios = workbook.sheet("ORDINARIOS");
+                if (!sheetOrdinarios) sheetOrdinarios = workbook.sheet(0);
 
-                // Helper copia celda seguro
-                const safeCopy = (srcRow, srcCol, tgtRow, tgtCol) => {
-                    try {
-                        const cellSrc = sheet.row(srcRow).cell(srcCol);
-                        const cellTgt = sheet.row(tgtRow).cell(tgtCol);
-                        cellTgt.value(cellSrc.value());
-                        cellTgt.style(cellSrc.style());
-                    } catch (e) { }
-                };
-
-                // FASE 1: CLONAR ESTRUCTURA (Antes de ensuciar el bloque original)
-                // Copiamos el Bloque 0 (limpio) a las posiciones 1, 2, 3...
-                for (let i = 1; i < docentesAExportar.length; i++) {
-                    const rowOffset = i * ROWS_PER_BLOCK_SPACE;
-                    const currentBlockStart = config.blockStartRow + rowOffset;
-
-                    // Clonar fila por fila
-                    for (let r = 0; r < BLOCK_HEIGHT; r++) {
-                        const sourceR = config.blockStartRow + r;
-                        const targetR = currentBlockStart + r;
-                        // Copiar rango ancho (cols 1 a 20)
-                        for (let c = 1; c <= 20; c++) {
-                            safeCopy(sourceR, c, targetR, c);
-                        }
-                    }
+                if (sheetOrdinarios) {
+                    fillSheet(sheetOrdinarios, docentesOrdinarios, config);
                 }
 
-                // FASE 2: LLENAR DATOS (Ahora que todo está clonado y limpio)
-                for (let i = 0; i < docentesAExportar.length; i++) {
-                    const doc = docentesAExportar[i];
-                    const rowOffset = i * ROWS_PER_BLOCK_SPACE;
-                    const currentBlockStart = config.blockStartRow + rowOffset;
+                // --- HOJA 2: CONTRATADOS ---
+                if (docentesContratados.length > 0) {
+                    let sheetContratados = workbook.sheet("CONTRATADOS");
 
-                    // DATOS DOCENTE
-                    if (config.cellDocenteBlock) {
-                        const match = config.cellDocenteBlock.match(/^([A-Z]+)([0-9]+)$/);
-                        if (match) {
-                            const colRef = match[1];
-                            const rowRef = parseInt(match[2]);
-                            const relRow = rowRef - config.blockStartRow;
-
-                            if (relRow >= 0) {
-                                safeSet(colRef, currentBlockStart + relRow, doc.nombre);
-                            }
-                        }
+                    // Si no existe por nombre, intentamos buscar la segunda hoja (índice 1)
+                    if (!sheetContratados) {
+                        sheetContratados = workbook.sheet(1);
                     }
 
-                    // DATOS CURSOS
-                    const cursosRelativeIndex = config.rowCursosBlock - config.blockStartRow;
-                    let cursosRowStart = currentBlockStart + cursosRelativeIndex;
-                    let numeracion = 1;
-
-                    // Limpiar filas de cursos antes de escribir (por si el template traía basura)
-                    // Calculamos cuántas filas de cursos caben en el bloque aproximadamente
-                    const maxRowsForCursos = config.blockEndRow - config.rowCursosBlock + 1;
-
-                    if (doc.carga && doc.carga.length > 0) {
-                        doc.carga.forEach((item, idx) => {
-                            const currentRow = cursosRowStart + idx;
-
-                            const cRef = mallaRaw.find(m => m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()) || {};
-                            let ht = 0, hp = 0, cred = 0;
-                            if (item.tipo === 'FULL') { ht = parseInt(cRef["HT"] || 0); hp = parseInt(cRef["HP"] || 0); }
-                            else { hp = parseInt(cRef["HP"] || 0); }
-
-                            // ----------------- DEBUGGING INICIO -----------------
-                            // Solo mostramos alerta para el PRIMER curso del PRIMER docente para no spammear
-                            if (i === 0 && idx === 0) {
-                                console.log("Buscando curso:", item.codigo);
-                                console.log("Encontramos:", cRef);
-                                console.log("Keys disponibles:", Object.keys(cRef));
-                                if (!cRef || Object.keys(cRef).length === 0) {
-                                    alert(`⚠️ OJO: No encontré el curso ${item.codigo} en la malla. Revisa si los códigos coinciden EXACTAMENTE.`);
-                                } else {
-                                    const keyCredDebug = Object.keys(cRef).find(k => k.toUpperCase().includes("CRED") || k.toUpperCase().includes("CR"));
-                                    if (!keyCredDebug) {
-                                        alert(`⚠️ ENCONTRÉ EL CURSO PERO NO LOS CRÉDITOS.\n\nLas columnas que tiene tu malla son:\n${Object.keys(cRef).join(", ")}\n\n(Avisa al sistema cuál es la de créditos)`);
-                                    }
-                                }
-                            }
-                            // ----------------- DEBUGGING FIN -----------------
-
-                            // Búsqueda inteligente de Créditos (CREDITOS, CR, CRED, CREDITOS, CR., CREDITOS.)
-                            const keys = Object.keys(cRef);
-                            // Buscamos algo que empiece con CR, o contenga CREDIT
-                            const keyCred = keys.find(k => k.toUpperCase().includes("CRED") || k.toUpperCase().startsWith("CR")) || "CREDITOS";
-                            cred = cRef[keyCred] || "";
-
-                            // Si sigue vacío, intentamos buscar 'CR.' literal o 'C' si fuera el caso extremo
-                            if (!cred && cRef["CR."]) cred = cRef["CR."];
-                            if (!cred && cRef["C."]) cred = cRef["C."];
-
-                            let th = ht + hp;
-                            let grupo = item.tipo === 'FULL' ? 'A' : 'B';
-
-                            safeSet(config.colN, currentRow, numeracion++);
-                            safeSet(config.colCodigo, currentRow, item.codigo);
-                            safeSet(config.colCurso, currentRow, item.nombre);
-                            safeSet(config.colCred, currentRow, cred);
-                            safeSet(config.colHT, currentRow, ht || "-");
-                            safeSet(config.colHP, currentRow, hp || "-");
-                            safeSet(config.colTH, currentRow, th);
-                            safeSet(config.colGrupo, currentRow, grupo);
-                            safeSet(config.colEscuela, currentRow, "EPIS");
-                        });
+                    if (sheetContratados) {
+                        fillSheet(sheetContratados, docentesContratados, config);
+                    } else {
+                        alert("AVISO: Hay docentes contratados pero no se encontró una segunda hoja (o hoja 'CONTRATADOS') en la plantilla.");
                     }
-
-                    // FASE 3: RESTAURAR/INSERTAR FÓRMULAS DE TOTALES
-                    // Asumimos que la fila de "TOTAL HORAS" está al final del bloque o justo debajo de los cursos.
-                    // Si el usuario definió blockEndRow como la fila de totales, usaremos esa.
-                    // Si no, trataremos de inferirla.
-
-                    // Estrategia: "TOTAL HORAS" suele estar en la última fila del bloque o +1.
-                    // Vamos a intentar poner la fórmula en la fila = CurrentBlockStart + (config.blockEndRow - config.blockStartRow)
-                    const rowTotal = currentBlockStart + (config.blockEndRow - config.blockStartRow);
-
-                    // Rango de suma: Desde rowCursosBlock hasta rowTotal - 1
-                    const rowInicioSuma = currentBlockStart + (config.rowCursosBlock - config.blockStartRow);
-                    const rowFinSuma = rowTotal - 1;
-
-                    if (rowFinSuma >= rowInicioSuma) {
-                        if (config.colHT) sheet.cell(`${config.colHT}${rowTotal}`).formula(`SUM(${config.colHT}${rowInicioSuma}:${config.colHT}${rowFinSuma})`);
-                        if (config.colHP) sheet.cell(`${config.colHP}${rowTotal}`).formula(`SUM(${config.colHP}${rowInicioSuma}:${config.colHP}${rowFinSuma})`);
-                        // Total General (HT + HP) o Suma de columna TH
-                        if (config.colTH) sheet.cell(`${config.colTH}${rowTotal}`).formula(`SUM(${config.colTH}${rowInicioSuma}:${config.colTH}${rowFinSuma})`);
-                    }
-
                 }
 
                 const blob = await workbook.outputAsync();
@@ -1888,15 +1820,129 @@
                 const a = document.createElement("a");
                 document.body.appendChild(a);
                 a.href = url;
-                a.download = `Carga_Vertical_Completa.xlsx`;
+                a.download = `Carga_Docente_Sep_2026_${new Date().getTime()}.xlsx`;
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.getElementById('modalConfigExcel').style.display = 'none';
-                showToast("¡Excel Vertical Generado!", "success");
+                showToast("¡Reporte Generado!", "success");
 
             } catch (err) {
                 console.error(err);
-                alert("Error al generar Excel (Verifica tus coordenadas):\n" + err.message);
+                alert("Error al generar Excel:\n" + err.message);
+            }
+        }
+
+        // Helper Function para llenar una hoja específica
+        function fillSheet(sheet, listaDocentes, config) {
+            if (!listaDocentes || listaDocentes.length === 0) return;
+
+            const BLOCK_HEIGHT = config.blockEndRow - config.blockStartRow + 1;
+            const ROWS_PER_BLOCK_SPACE = BLOCK_HEIGHT;
+
+            // Helper para setear valor seguro
+            const safeSet = (col, row, val) => {
+                if (!col) return;
+                try { sheet.cell(`${col}${row}`).value(val); } catch (e) { }
+            };
+
+            // Helper copia celda
+            const safeCopy = (srcRow, srcCol, tgtRow, tgtCol) => {
+                try {
+                    const cellSrc = sheet.row(srcRow).cell(srcCol);
+                    const cellTgt = sheet.row(tgtRow).cell(tgtCol);
+                    cellTgt.value(cellSrc.value());
+                    cellTgt.style(cellSrc.style());
+                    // Copiar merged si es posible (XlsxPopulate a veces es simple con esto)
+                } catch (e) { }
+            };
+
+            // FASE 1: CLONAR ESTRUCTURA
+            // Copiamos el Bloque base (definido en config) hacia abajo para cada docente extra
+            // Empezamos desde i=1 porque el primero usa el bloque original
+            for (let i = 1; i < listaDocentes.length; i++) {
+                const rowOffset = i * ROWS_PER_BLOCK_SPACE;
+                const currentBlockStart = config.blockStartRow + rowOffset;
+
+                for (let r = 0; r < BLOCK_HEIGHT; r++) {
+                    const sourceR = config.blockStartRow + r;
+                    const targetR = currentBlockStart + r;
+                    // Copiamos un rango amplio de columnas (ej. 1 a 20)
+                    for (let c = 1; c <= 25; c++) {
+                        safeCopy(sourceR, c, targetR, c);
+                    }
+                }
+            }
+
+            // FASE 2: LLENAR DATOS
+            for (let i = 0; i < listaDocentes.length; i++) {
+                const doc = listaDocentes[i];
+                const rowOffset = i * ROWS_PER_BLOCK_SPACE;
+                const currentBlockStart = config.blockStartRow + rowOffset;
+
+                // Nombre Docente
+                if (config.cellDocenteBlock) {
+                    const match = config.cellDocenteBlock.match(/^([A-Z]+)([0-9]+)$/);
+                    if (match) {
+                        const colRef = match[1];
+                        const rowRef = parseInt(match[2]);
+                        const relRow = rowRef - config.blockStartRow;
+                        if (relRow >= 0) {
+                            safeSet(colRef, currentBlockStart + relRow, doc.nombre);
+                        }
+                    }
+                }
+
+                // Cursos
+                const cursosRelativeIndex = config.rowCursosBlock - config.blockStartRow;
+                let cursosRowStart = currentBlockStart + cursosRelativeIndex;
+                let numeracion = 1;
+
+                if (doc.carga && doc.carga.length > 0) {
+                    doc.carga.forEach((item, idx) => {
+                        const currentRow = cursosRowStart + idx;
+                        const cRef = mallaRaw.find(m => m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()) || {};
+
+                        let ht = 0, hp = 0, cred = "";
+                        if (item.tipo === 'FULL') { ht = parseInt(cRef["HT"] || 0); hp = parseInt(cRef["HP"] || 0); }
+                        else { hp = parseInt(cRef["HP"] || 0); }
+
+                        if (Number.isNaN(ht)) ht = 0; // fallback
+                        if (Number.isNaN(hp)) hp = 0;
+
+                        // Buscar Creditos
+                        const keys = Object.keys(cRef);
+                        const keyCred = keys.find(k => k.toUpperCase().includes("CRED") || k.toUpperCase().startsWith("CR")) || "CREDITOS";
+                        cred = cRef[keyCred] || "";
+                        if (!cred && cRef["CR."]) cred = cRef["CR."];
+                        if (!cred && cRef["C."]) cred = cRef["C."];
+
+                        let th = ht + hp;
+                        let grupo = item.tipo === 'FULL' ? 'A' : 'B'; // Lógica básica de grupo
+
+                        safeSet(config.colN, currentRow, numeracion++);
+                        safeSet(config.colCodigo, currentRow, item.codigo);
+                        safeSet(config.colCurso, currentRow, item.nombre);
+                        safeSet(config.colCred, currentRow, cred);
+                        safeSet(config.colHT, currentRow, ht || "-");
+                        safeSet(config.colHP, currentRow, hp || "-");
+                        safeSet(config.colTH, currentRow, th);
+                        safeSet(config.colGrupo, currentRow, grupo);
+                        safeSet(config.colEscuela, currentRow, "EPIS");
+                    });
+                }
+
+                // FASE 3: FORMULAS TOTALES
+                // Intentamos poner la suma al final del bloque
+                const rowTotal = currentBlockStart + (config.blockEndRow - config.blockStartRow);
+                const rowInicioSuma = currentBlockStart + (config.rowCursosBlock - config.blockStartRow);
+                // La fila final de suma es justo antes del total
+                const rowFinSuma = rowTotal - 1;
+
+                if (rowFinSuma >= rowInicioSuma) {
+                    if (config.colHT) sheet.cell(`${config.colHT}${rowTotal}`).formula(`SUM(${config.colHT}${rowInicioSuma}:${config.colHT}${rowFinSuma})`);
+                    if (config.colHP) sheet.cell(`${config.colHP}${rowTotal}`).formula(`SUM(${config.colHP}${rowInicioSuma}:${config.colHP}${rowFinSuma})`);
+                    if (config.colTH) sheet.cell(`${config.colTH}${rowTotal}`).formula(`SUM(${config.colTH}${rowInicioSuma}:${config.colTH}${rowFinSuma})`);
+                }
             }
         }
 
