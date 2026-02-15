@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <script>
@@ -18,6 +19,7 @@
     <title>Gestión de Laboratorios UNAJMA - 2026</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Estilo para la opción activa */
         nav a.active {
@@ -34,242 +36,895 @@
             transition: all 0.3s ease;
             display: inline-block;
         }
-        :root { --blue: #1a3a5a; --bg: #f4f7f9; --red: #e53e3e; --green: #38a169; --purple: #8e44ad; --orange: #d35400; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        nav { background: var(--blue); padding: 12px; text-align: center; flex-shrink: 0; }
-        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; }
 
-        .layout { display: flex; flex-grow: 1; overflow: hidden; width: 100vw; position: relative; }
-        .sidebar { width: 350px; background: white; border-right: 2px solid #ddd; padding: 15px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; }
-        .main-content { flex-grow: 1; padding: 20px; overflow: auto; background: var(--bg); position: relative; }
-        
-        .schedule-table { width: 100%; min-width: 950px; border-collapse: collapse; background: white; border: 2px solid #000; table-layout: fixed; }
-        .schedule-table th { background: var(--blue); color: white; padding: 10px; border: 1px solid #000; font-size: 11px; position: sticky; top: 0; z-index: 10; }
-        .schedule-table td { border: 1px solid #000; height: 180px; text-align: center; vertical-align: middle; padding: 5px; position: relative; }
-        
-        .hour-cell { background: #edf2f7; font-weight: bold; width: 90px; font-size: 11px; }
-        .course-block { border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 5px; background: #fff; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .course-block.drag-over { border: 2px dashed var(--purple); background: #f3e8ff; }
-        .course-title { font-weight: bold; font-size: 9px; color: var(--blue); display: block; border-bottom: 1px solid #eee; margin-bottom: 3px; }
-        
-        .lab-asignado { background: var(--purple); color: white; padding: 4px 6px; border-radius: 4px; font-size: 10px; margin-top: 4px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
-        .btn-del-asig { background: none; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 12px; }
+        :root {
+            --blue: #1a3a5a;
+            --bg: #f4f7f9;
+            --red: #e53e3e;
+            --green: #38a169;
+            --purple: #8e44ad;
+            --orange: #d35400;
+        }
 
-        .aforo-badge { font-size: 9px; font-weight: bold; margin-top: 4px; padding: 2px 5px; border-radius: 3px; display: block; text-align: center; box-sizing: border-box; }
-        .exceso { background: #fff5f5; color: var(--red); border: 1px solid var(--red); }
-        .sobra { background: #f0fff4; color: var(--green); border: 1px solid var(--green); }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-        .input-sidebar { padding: 10px; margin-bottom: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
-        .btn-action { background: var(--blue); color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; font-size: 12px; }
-        .lab-item-sidebar { background: var(--purple); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 11px; border-left: 6px solid #4b0082; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
+        nav {
+            background: var(--blue);
+            padding: 12px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .layout {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+            width: 100vw;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-right: 2px solid #ddd;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: var(--blue);
+            text-align: center;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow: auto;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .schedule-table {
+            width: 100%;
+            /* min-width removed to allow responsiveness */
+            border-collapse: collapse;
+            background: white;
+            border: 2px solid #000;
+            table-layout: fixed;
+        }
+
+        .schedule-table th {
+            background: var(--blue);
+            color: white;
+            padding: 10px;
+            border: 1px solid #000;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .schedule-table td {
+            border: 1px solid #000;
+            height: 110px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px;
+            position: relative;
+        }
+
+        .hour-cell {
+            background: #edf2f7;
+            font-weight: bold;
+            width: 8%;
+            /* Percentage width for responsiveness */
+            font-size: 10px;
+        }
+
+        .course-block {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 2px;
+            background: #fff;
+            text-align: left;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+
+
+        .lab-item-sidebar {
+            background: var(--purple);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            border-left: 4px solid #4b0082;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .course-block.drag-over {
+            border: 2px dashed var(--purple);
+            background: #f3e8ff;
+        }
+
+        .course-title {
+            font-weight: bold;
+            font-size: 8px;
+            color: var(--blue);
+            display: block;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1px;
+            line-height: 1.1;
+        }
+
+        .lab-asignado {
+            background: var(--purple);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 9px;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .btn-del-asig {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .aforo-badge {
+            font-size: 8px;
+            font-weight: bold;
+            margin-top: 2px;
+            padding: 1px 3px;
+            border-radius: 2px;
+            display: block;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .exceso {
+            background: #fff5f5;
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+
+        .sobra {
+            background: #f0fff4;
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+
+        .input-sidebar {
+            padding: 8px;
+            margin-bottom: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .btn-action {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .lab-item-sidebar {
+            background: var(--purple);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            border-left: 4px solid #4b0082;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
+
 <body>
 
-<nav>
-     <a href="horarios.html">Horarios</a>    
-    <a href="vista_docente.html">Horario Docente</a>
-    <a href="laboratorios.html" class="active">Asignar Laboratorios</a>
-    <a href="vista_laboratorios.html">Vista Ocupación</a>
-    <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
-</nav>
 
-<div class="layout">
-    <div class="sidebar">
-        <h3>🧪 Gestión de Laboratorios</h3>
-        <input type="text" id="labNom" class="input-sidebar" placeholder="Nombre (ej: Lab 07)">
-        <input type="number" id="labCap" class="input-sidebar" placeholder="Capacidad de PCs">
-        <button class="btn-action" onclick="agregarLab()">+ REGISTRAR LABORATORIO</button>
-        
-        <hr style="width: 100%; border: 0.5px solid #eee; margin: 15px 0;">
-        <div id="listaLabs" style="flex-grow:1; overflow-y:auto;"></div>
-        
-        <button class="btn-action" style="background:var(--purple);" onclick="optimizarBloquesContinuos()">🤖 OPTIMIZACIÓN POR BLOQUES</button>
-        <button class="btn-action" style="background:var(--red);" onclick="limpiarAsignaciones()">🗑️ LIMPIAR TODO</button>
-        <button class="btn-action" style="background:var(--green);" onclick="guardarAsignaciones()">💾 GUARDAR CAMBIOS</button>
-    </div>
 
-    <div class="main-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="margin:0; color:var(--blue);">PLANIFICACIÓN TÉCNICA Y TURNOS</h2>
-            <select id="selCiclo" onchange="renderHorarioConCursos()" style="padding:10px; font-weight:bold; border-radius:8px; border: 2px solid var(--blue);">
-                <option value="I">Ciclo I</option><option value="II">Ciclo II</option><option value="III">Ciclo III</option>
-                <option value="IV">Ciclo IV</option><option value="V">Ciclo V</option><option value="VI">Ciclo VI</option>
-                <option value="VII">Ciclo VII</option><option value="VIII">Ciclo VIII</option><option value="IX">Ciclo IX</option>
-                <option value="X">Ciclo X</option>
-            </select>
+    <div class="layout">
+        <div class="sidebar">
+            <h3><i class="fa-solid fa-flask"></i> Gestión de Laboratorios</h3>
+            <input type="text" id="labNom" class="input-sidebar" placeholder="Nombre (ej: Lab 07)">
+            <input type="number" id="labCap" class="input-sidebar" placeholder="Capacidad de PCs">
+            <input type="text" id="labTags" class="input-sidebar" placeholder="Software/Tags (ej: SQL, Proteus)">
+
+            <div style="display:flex; gap:5px;">
+                <button id="btnAgregarLab" class="btn-action" onclick="agregarLab()"><i class="fa-solid fa-plus"></i>
+                    REGISTRAR LABORATORIO</button>
+                <button id="btnCancelarEdit" class="btn-action" style="background:#7fa6c8; display:none;"
+                    onclick="cancelarEdicion()"><i class="fa-solid fa-ban"></i></button>
+            </div>
+
+            <button class="btn-action" style="background:var(--orange);" onclick="abrirConfigReglas()"><i
+                    class="fa-solid fa-gear"></i> CONFIGURAR
+                REGLAS</button>
+
+            <hr style="width: 100%; border: 0.5px solid #eee; margin: 8px 0;">
+            <div id="listaLabs" style="flex-grow:1; overflow-y:auto; padding-right:5px;"></div>
+
+            <button class="btn-action" style="background:var(--purple);" onclick="optimizarBloquesContinuos()"><i
+                    class="fa-solid fa-robot"></i>
+                OPTIMIZACIÓN POR BLOQUES</button>
+            <button class="btn-action" style="background:var(--red);" onclick="limpiarAsignaciones()"><i
+                    class="fa-solid fa-trash"></i> LIMPIAR
+                TODO</button>
+            <button class="btn-action" style="background:var(--green);" onclick="guardarAsignaciones()"><i
+                    class="fa-solid fa-floppy-disk"></i> GUARDAR
+                CAMBIOS</button>
         </div>
-        <table class="schedule-table">
-            <thead>
-                <tr><th>HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SÁBADO</th></tr>
-            </thead>
-            <tbody id="cuerpoLab"></tbody>
-        </table>
+
+        <div class="main-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="margin:0; color:var(--blue);">PLANIFICACIÓN TÉCNICA Y TURNOS</h2>
+                <select id="selCiclo" onchange="renderHorarioConCursos()"
+                    style="padding:10px; font-weight:bold; border-radius:8px; border: 2px solid var(--blue);">
+                    <option value="I">Ciclo I</option>
+                    <option value="II">Ciclo II</option>
+                    <option value="III">Ciclo III</option>
+                    <option value="IV">Ciclo IV</option>
+                    <option value="V">Ciclo V</option>
+                    <option value="VI">Ciclo VI</option>
+                    <option value="VII">Ciclo VII</option>
+                    <option value="VIII">Ciclo VIII</option>
+                    <option value="IX">Ciclo IX</option>
+                    <option value="X">Ciclo X</option>
+                </select>
+            </div>
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>HORA</th>
+                        <th>LUNES</th>
+                        <th>MARTES</th>
+                        <th>MIERCOLES</th>
+                        <th>JUEVES</th>
+                        <th>VIERNES</th>
+                        <th>SÁBADO</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoLab"></tbody>
+            </table>
+        </div>
     </div>
-</div>
 
-<script>
-    function resaltarMenuActivo() {
-        const paginaActual = window.location.pathname.split("/").pop();
-        const enlaces = document.querySelectorAll('nav a');
-        enlaces.forEach(enlace => {
-            if (enlace.getAttribute('href') === paginaActual) {
-                enlace.classList.add('active');
-            } else {
-                enlace.classList.remove('active');
-            }
-        });
-    }
+    <div id="modalReglas"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:400px; max-height:80vh; overflow-y:auto;">
+            <h3 style="margin-top:0;"><i class="fa-solid fa-gear"></i> Reglas de Asignación</h3>
+            <p style="font-size:12px; color:#666;">Asocia palabras clave de cursos con software/tags requeridos.</p>
 
-    window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
+            <input type="text" id="reglaKey" placeholder="Palabra Clave (ej: Base de Datos)"
+                style="width:100%; padding:8px; margin-bottom:5px; box-sizing:border-box;">
+            <input type="text" id="reglaTag" placeholder="Tag Requerido (ej: SQL)"
+                style="width:100%; padding:8px; margin-bottom:10px; box-sizing:border-box;">
+            <button onclick="agregarRegla()" class="btn-action">
+                + AGREGAR REGLA
+            </button>
 
-    function cerrarSesion() {
-        localStorage.removeItem("accesoPermitido");
-        window.location.replace("login.html");
-    }
+            <ul id="listaReglas" style="list-style:none; padding:0; margin-top:15px;"></ul>
 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", 
-        authDomain: "carga-docente.firebaseapp.com", 
-        projectId: "carga-docente", 
-        storageBucket: "carga-docente.firebasestorage.app", 
-        messagingSenderId: "994250556754", 
-        appId: "1:994250556754:web:ecabed4715e7803542e68b" 
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+            <button onclick="document.getElementById('modalReglas').style.display='none'" class="btn-action"
+                style="background:#ccc; color: #333;">
+                CERRAR
+            </button>
+        </div>
+    </div>
 
-    let laboratorios = [], horariosData = {}, censoSincronizado = {};
-    const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
-    const ciclos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-
-    window.onload = async () => {
-        const hor = await db.collection("planificacion").doc("horarios").get();
-        if(hor.exists) horariosData = hor.data().horariosGeneral || {};
-        const labs = await db.collection("planificacion").doc("config_laboratorios").get();
-        if(labs.exists) laboratorios = labs.data().lista || [];
-        const config = await db.collection("planificacion").doc("config_general").get();
-        if(config.exists) censoSincronizado = config.data().censoCursos || {};
-        
-        renderListaLabs(); renderHorarioConCursos();
-    };
-
-    function obtenerDemandaReal(codigoCurso) {
-        let docentes = new Set();
-        ciclos.forEach(c => {
-            const data = horariosData[c] || {};
-            Object.values(data).forEach(bloque => {
-                bloque.forEach(ins => { if(ins.codigo === codigoCurso && ins.subTipo === "HP") docentes.add(ins.docente); });
+    <script>
+        function resaltarMenuActivo() {
+            const paginaActual = window.location.pathname.split("/").pop();
+            const enlaces = document.querySelectorAll('nav a');
+            enlaces.forEach(enlace => {
+                if (enlace.getAttribute('href') === paginaActual) {
+                    enlace.classList.add('active');
+                } else {
+                    enlace.classList.remove('active');
+                }
             });
-        });
-        const totalAlumnos = censoSincronizado[codigoCurso]?.total || 0;
-        return docentes.size > 1 ? Math.ceil(totalAlumnos / 2) : totalAlumnos;
-    }
+        }
 
-    function onDragStart(ev, labNombre) { ev.dataTransfer.setData("text", labNombre); }
-    function onDragOver(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
-    function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
-    function onDrop(ev, key, idx) {
-        ev.preventDefault();
-        ev.currentTarget.classList.remove('drag-over');
-        const labNom = ev.dataTransfer.getData("text");
-        const cic = document.getElementById('selCiclo').value;
-        const hayCruce = ciclos.some(c => (horariosData[c]?.[key] || []).some(b => b.lab === labNom));
-        if(hayCruce) return alert("🚫 Laboratorio ocupado.");
-        horariosData[cic][key][idx].lab = labNom;
-        renderHorarioConCursos();
-    }
+        window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
 
-    async function optimizarBloquesContinuos() {
-        if(!confirm("🤖 Optimizando... Se respetará el mismo lab para horas seguidas del docente.")) return;
-        ciclos.forEach(c => { if(horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); });
-        const labsDesc = [...laboratorios].sort((a, b) => b.capacidad - a.capacidad);
+        function cerrarSesion() {
+            localStorage.removeItem("accesoPermitido");
+            window.location.replace("login.html");
+        }
 
-        for (let d = 1; d <= 6; d++) { // Actualizado a 6 para incluir Sábado
-            for (let i = 0; i < horas.length; i++) {
-                const key = `${i}-${d}`;
-                let reqs = [];
-                ciclos.forEach(cic => {
-                    (horariosData[cic]?.[key] || []).forEach((inst, idx) => {
-                        if (inst.subTipo === "HP" && !inst.lab) {
-                            let bloqueH = [i];
-                            for(let hProx = i + 1; hProx < horas.length; hProx++) {
-                                const sig = (horariosData[cic]?.[`${hProx}-${d}`] || []).find(p => p.docente === inst.docente && p.codigo === inst.codigo);
-                                if(sig) bloqueH.push(hProx); else break;
-                            }
-                            reqs.push({ cic, key, idx, demanda: obtenerDemandaReal(inst.codigo), docente: inst.docente, codigo: inst.codigo, bloqueH });
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc",
+            authDomain: "carga-docente.firebaseapp.com",
+            projectId: "carga-docente",
+            storageBucket: "carga-docente.firebasestorage.app",
+            messagingSenderId: "994250556754",
+            appId: "1:994250556754:web:ecabed4715e7803542e68b"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let laboratorios = [], horariosData = {}, censoSincronizado = {}, reglasAsignacion = [];
+        let labEditandoId = null;
+        const horas = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+        const ciclos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+        let cacheDemanda = {};
+
+        window.onload = async () => {
+            const hor = await db.collection("planificacion").doc("horarios").get();
+            if (hor.exists) horariosData = hor.data().horariosGeneral || {};
+            const labs = await db.collection("planificacion").doc("config_laboratorios").get();
+            if (labs.exists) laboratorios = labs.data().lista || [];
+            const config = await db.collection("planificacion").doc("config_general").get();
+            if (config.exists) censoSincronizado = config.data().censoCursos || {};
+            const reglas = await db.collection("planificacion").doc("config_reglas").get();
+            if (reglas.exists) reglasAsignacion = reglas.data().lista || [];
+
+            calcularDemandaGlobal();
+            renderListaLabs(); renderHorarioConCursos();
+        };
+
+        function calcularDemandaGlobal() {
+            cacheDemanda = {};
+            const cursoDocentes = {};
+
+            ciclos.forEach(c => {
+                const data = horariosData[c] || {};
+                Object.values(data).forEach(bloque => {
+                    bloque.forEach(ins => {
+                        if (ins.subTipo === "HP") {
+                            if (!cursoDocentes[ins.codigo]) cursoDocentes[ins.codigo] = new Set();
+                            cursoDocentes[ins.codigo].add(ins.docente);
                         }
                     });
                 });
-                reqs.sort((a, b) => b.demanda - a.demanda);
-                reqs.forEach(r => {
-                    const lab = labsDesc.find(l => r.bloqueH.every(h => !ciclos.some(c => (horariosData[c]?.[`${h}-${d}`] || []).some(b => b.lab === l.nombre))));
-                    if (lab) {
-                        r.bloqueH.forEach(h => {
-                            const target = (horariosData[r.cic][`${h}-${d}`]).find(b => b.docente === r.docente && b.codigo === r.codigo);
-                            if(target) target.lab = lab.nombre;
-                        });
-                    }
+            });
+
+            Object.keys(censoSincronizado).forEach(cod => {
+                const total = censoSincronizado[cod]?.total || 0;
+                const numDocentes = cursoDocentes[cod] ? cursoDocentes[cod].size : 1;
+                cacheDemanda[cod] = numDocentes > 1 ? Math.ceil(total / 2) : total;
+            });
+        }
+
+        function obtenerDemandaReal(codigoCurso) {
+            return cacheDemanda[codigoCurso] || 0;
+        }
+
+        function onDragStart(ev, labNombre) { ev.dataTransfer.setData("text", labNombre); }
+        function onDragOver(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+        function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+        function onDrop(ev, key, idx) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const labNom = ev.dataTransfer.getData("text");
+            const cic = document.getElementById('selCiclo').value;
+
+            // Validar capacidad compartida
+            const labInfo = laboratorios.find(l => l.nombre === labNom);
+            if (!labInfo) return; // Should not happen based on drag data
+
+            let cargaActual = 0;
+            // Calcular carga actual en esa hora de TODOS los ciclos
+            ciclos.forEach(c => {
+                const bloques = horariosData[c]?.[key] || [];
+                bloques.forEach(b => {
+                    if (b.lab === labNom) cargaActual += obtenerDemandaReal(b.codigo);
                 });
+            });
+
+            const demandaNueva = obtenerDemandaReal(horariosData[cic][key][idx].codigo);
+
+            if (cargaActual + demandaNueva > labInfo.capacidad) {
+                return alert(`🚫 ¡Sin capacidad! El laboratorio '${labNom}' tiene ${labInfo.capacidad} PCs, ocupadas: ${cargaActual}, necesitas: ${demandaNueva}.`);
+            }
+
+            horariosData[cic][key][idx].lab = labNom;
+            renderHorarioConCursos();
+        }
+
+        // --- REGLAS LOGIC ---
+        function abrirConfigReglas() {
+            document.getElementById('modalReglas').style.display = 'flex';
+            renderListaReglas();
+        }
+
+        async function agregarRegla() {
+            const key = document.getElementById('reglaKey').value.trim().toUpperCase();
+            const tag = document.getElementById('reglaTag').value.trim().toUpperCase();
+            if (!key || !tag) return alert("Ingrese datos");
+            reglasAsignacion.push({ key, tag });
+            renderListaReglas();
+            document.getElementById('reglaKey').value = ""; document.getElementById('reglaTag').value = "";
+            await db.collection("planificacion").doc("config_reglas").set({ lista: reglasAsignacion });
+        }
+
+        function renderListaReglas() {
+            document.getElementById('listaReglas').innerHTML = reglasAsignacion.map((r, i) =>
+                `<li><button onclick="borrarRegla(${i})">✕</button> <strong>${r.key}</strong> ➝ <span style="background:#edf2f7; padding:2px 5px; border-radius:4px;">${r.tag}</span></li>`
+            ).join("");
+        }
+
+        async function borrarRegla(i) {
+            reglasAsignacion.splice(i, 1);
+            renderListaReglas();
+            await db.collection("planificacion").doc("config_reglas").set({ lista: reglasAsignacion });
+        }
+
+        function obtenerRequisitos(nombreCurso) {
+            const reqs = new Set();
+            const nombre = nombreCurso.toUpperCase();
+            reglasAsignacion.forEach(r => {
+                if (nombre.includes(r.key)) {
+                    // Support comma-separated tags in rules
+                    r.tag.toUpperCase().split(",").forEach(t => reqs.add(t.trim()));
+                }
+            });
+            return Array.from(reqs);
+        }
+        // --------------------
+
+        async function optimizarBloquesContinuos() {
+            try {
+                if (laboratorios.length === 0) return alert("❌ No hay laboratorios registrados para asignar.");
+                if (!confirm("🤖 Optimizando... Se eliminarán asignaciones actuales y se intentará cubrir la mayor cantidad de alumnos posible.")) return;
+
+                // Limpiar asignaciones
+                ciclos.forEach(c => { if (horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); });
+
+                const labsDesc = [...laboratorios].sort((a, b) => b.capacidad - a.capacidad);
+                const ocupacion = {};
+                const usageHistory = {}; // key = "Codigo-Docente", value = HorasAsignadas
+                let failedAssignments = []; // Reporte de fallos
+                let partialAssignments = []; // Reporte de asignaciones parciales
+
+                const getCargaActual = (labNombre, h, d) => {
+                    const key = `${h}-${d}`;
+                    if (!ocupacion[key]) return 0;
+                    return ocupacion[key].filter(o => o.lab === labNombre).reduce((sum, o) => sum + o.demand, 0);
+                };
+
+                const tieneCapacidad = (lab, bloqueH, dia, demandaExtra) => {
+                    return bloqueH.every(h => {
+                        const carga = getCargaActual(lab.nombre, h, dia);
+                        return (carga + demandaExtra) <= lab.capacidad;
+                    });
+                };
+
+                const estaLibre = (lab, bloqueH, dia) => {
+                    return bloqueH.every(h => getCargaActual(lab.nombre, h, dia) === 0); // Asumiendo exclusividad por bloque para simplificar
+                };
+
+                const registrarOcupacion = (lab, bloqueH, dia, demanda) => {
+                    bloqueH.forEach(h => {
+                        const key = `${h}-${dia}`;
+                        if (!ocupacion[key]) ocupacion[key] = [];
+                        ocupacion[key].push({ lab: lab.nombre, demand: demanda });
+                    });
+                };
+
+                let asignados = 0;
+                let sinLaboratorio = 0;
+                let specializedCount = 0;
+
+                for (let d = 1; d <= 6; d++) {
+                    let gruposDia = [];
+
+                    ciclos.forEach(cic => {
+                        const dataCiclo = horariosData[cic] || {};
+                        for (let h = 0; h < horas.length; h++) {
+                            const key = `${h}-${d}`;
+                            (dataCiclo[key] || []).forEach((inst, idxInBlock) => {
+                                if (inst.subTipo === "HP") {
+                                    gruposDia.push({ cic, h, idxInBlock, inst });
+                                }
+                            });
+                        }
+                    });
+
+                    gruposDia.sort((a, b) => {
+                        if (a.cic !== b.cic) return a.cic.localeCompare(b.cic);
+                        if (a.inst.codigo !== b.inst.codigo) return a.inst.codigo.localeCompare(b.inst.codigo);
+                        if (a.inst.docente !== b.inst.docente) return a.inst.docente.localeCompare(b.inst.docente);
+                        return a.h - b.h;
+                    });
+
+                    let bloquesUnicos = [];
+                    if (gruposDia.length > 0) {
+                        let currentBlock = [gruposDia[0]];
+                        for (let i = 1; i < gruposDia.length; i++) {
+                            const prev = currentBlock[currentBlock.length - 1];
+                            const curr = gruposDia[i];
+                            if (prev.cic === curr.cic && prev.inst.codigo === curr.inst.codigo && prev.inst.docente === curr.inst.docente && curr.h === prev.h + 1) {
+                                currentBlock.push(curr);
+                            } else {
+                                bloquesUnicos.push(currentBlock);
+                                currentBlock = [curr];
+                            }
+                        }
+                        bloquesUnicos.push(currentBlock);
+                    }
+
+                    let requerimientos = [];
+                    bloquesUnicos.forEach(block => {
+                        for (let i = 0; i < block.length; i += 2) {
+                            const subBlock = block.slice(i, i + 2);
+                            const first = subBlock[0];
+                            const nombreCurso = first.inst.course || first.inst.curso || "";
+                            let reqTags = obtenerRequisitos(nombreCurso);
+
+                            // EXCLUSIÓN DE OTRAS ESCUELAS
+                            const upperName = nombreCurso.toUpperCase();
+                            if (upperName.includes("EPE") || upperName.includes("EPIC") || upperName.includes("EPMEA") || upperName.includes("EPP")) {
+                                console.log(`Skipping external school course: ${nombreCurso}`);
+                                continue;
+                            }
+
+                            if (upperName.includes("ELÉCTRIC") || upperName.includes("ELECTIR") || upperName.includes("ELECTRO")) {
+                                if (!reqTags.includes("ELECTRONICA")) reqTags.push("ELECTRONICA");
+                            }
+
+                            const usageKey = `${first.inst.codigo}-${first.inst.docente}`;
+
+                            requerimientos.push({
+                                demanda: obtenerDemandaReal(first.inst.codigo),
+                                items: subBlock,
+                                horas: subBlock.map(b => b.h),
+                                reqTags: reqTags,
+                                nombreCurso: nombreCurso,
+                                usageKey: usageKey,
+                                history: usageHistory[usageKey] || 0
+                            });
+                        }
+                    });
+
+                    requerimientos.sort((a, b) => {
+                        const aTags = a.reqTags.length > 0;
+                        const bTags = b.reqTags.length > 0;
+                        if (aTags && bTags) return a.history - b.history; // Rotación si ambos son especializados
+                        if (aTags !== bTags) return aTags ? -1 : 1; // Prioridad a los que tienen tags REQUERIDOS
+                        return b.demanda - a.demanda; // Luego por demanda
+                    });
+
+                    // 4. Asignar
+                    requerimientos.forEach(req => {
+                        // 1. Filtrar solo labs libres en horario
+                        const libresDeHorario = labsDesc.filter(l => estaLibre(l, req.horas, d));
+
+                        let matchFound = false;
+                        const horasYaAsignadas = usageHistory[req.usageKey] || 0;
+
+                        // 2. BUSQUEDA ESPECIALIZADA (Tag Match)
+                        if (req.reqTags.length > 0) {
+                            // Intentar primero con tags
+                            const candidatosTag = libresDeHorario.filter(l => {
+                                const lTags = (l.tags || "").toUpperCase();
+                                return req.reqTags.some(rt => lTags.includes(rt));
+                            });
+
+                            // Primero intentar Capability FULL
+                            let candidates = candidatosTag.filter(l => tieneCapacidad(l, req.horas, d, req.demanda));
+
+                            // Si no hay con capacidad full, intentar Best Effort dentro de los especializados
+                            // (Solo si el 'best effort' es razonable, e.g. > 50% de la demanda? Por ahora tomamos el mayor)
+                            if (candidates.length === 0 && candidatosTag.length > 0) {
+                                candidates = [...candidatosTag].sort((a, b) => b.capacidad - a.capacidad); // Mayor capacidad primero
+                            } else if (candidates.length > 0) {
+                                candidates.sort((a, b) => a.capacidad - b.capacidad); // Menor capacidad que cumpla (Best Fit)
+                            }
+
+                            if (candidates.length > 0) {
+                                const lab = candidates[0];
+                                const isPartial = lab.capacidad < req.demanda;
+
+                                registrarOcupacion(lab, req.horas, d, req.demanda);
+                                req.items.forEach(item => { horariosData[item.cic][`${item.h}-${d}`][item.idxInBlock].lab = lab.nombre; });
+
+                                asignados++;
+                                usageHistory[req.usageKey] = horasYaAsignadas + req.horas.length;
+                                matchFound = true;
+                                specializedCount++;
+
+                                if (isPartial) partialAssignments.push({ curso: req.nombreCurso, lab: lab.nombre, cap: lab.capacidad, dem: req.demanda });
+                            }
+                        }
+
+                        // 3. BUSQUEDA GENERAL (Si no se asignó por especialidad)
+                        if (!matchFound) {
+                            // Estrategia:
+                            // 1. Buscar capacidad TOTAL (demand <= cap)
+                            // 2. Si falla, buscar capacidad PARCIAL (Best Effort: El mas grande disponible)
+
+                            // Filtrar candidatos libres. 
+                            // NOTA: libresDeHorario ya filtra por disponibilidad horaria.
+                            // Ordenar preferencias: 
+                            //  - Labs SIN tags preferidos (para dejar los especializados libres)
+                            //  - Capacidad suficiente
+
+                            // Separar en "Con Capacidad Suficiente" y "Insuficiente"
+                            const suficiente = libresDeHorario.filter(l => l.capacidad >= req.demanda);
+                            const insuficiente = libresDeHorario.filter(l => l.capacidad < req.demanda);
+
+                            let lab = null;
+
+                            if (suficiente.length > 0) {
+                                // Preferir labs que NO tengan tags coincidentes innecesarios (reservar especializados)
+                                // Pero si no hay otra opción, usarlos.
+                                sufficiente = suficiente.sort((a, b) => {
+                                    // Priorizar el que NO tiene tags (general)
+                                    const aGen = (!a.tags || a.tags.length < 3);
+                                    const bGen = (!b.tags || b.tags.length < 3);
+                                    if (aGen !== bGen) return aGen ? -1 : 1;
+                                    return a.capacidad - b.capacidad; // Smallest Fit
+                                });
+                                lab = suficiente[0];
+                            } else if (insuficiente.length > 0) {
+                                // BEST EFFORT: Tomar el mas grande disponible
+                                insuficiente.sort((a, b) => b.capacidad - a.capacidad);
+                                lab = insuficiente[0];
+                                partialAssignments.push({ curso: req.nombreCurso, lab: lab.nombre, cap: lab.capacidad, dem: req.demanda });
+                            }
+
+                            if (lab) {
+                                registrarOcupacion(lab, req.horas, d, req.demanda);
+                                req.items.forEach(item => {
+                                    horariosData[item.cic][`${item.h}-${d}`][item.idxInBlock].lab = lab.nombre;
+                                });
+                                asignados++;
+                            } else {
+                                sinLaboratorio++;
+                                failedAssignments.push({
+                                    curso: req.nombreCurso,
+                                    demanda: req.demanda,
+                                    dia: d,
+                                    horas: req.horas
+                                });
+                            }
+                        }
+                    });
+                }
+
+                renderHorarioConCursos();
+
+                let msg = `✅ Optimización completada.\n\n` +
+                    `- Asignados Totalmente: ${asignados - partialAssignments.length}\n` +
+                    `- Asignados Parcialmente (Faltan PCs): ${partialAssignments.length}\n` +
+                    `- Sin Laboratorio: ${sinLaboratorio}\n\n`;
+
+                if (partialAssignments.length > 0) {
+                    msg += `⚠️ DÉFICIT DE EQUIPOS:\n` + partialAssignments.slice(0, 5).map(p => `- ${p.curso}: ${p.cap}/${p.dem}`).join("\n") + (partialAssignments.length > 5 ? "\n..." : "") + "\n\n";
+                }
+
+                if (failedAssignments.length > 0) {
+                    msg += `❌ NO SE PUDO ASIGNAR:\n` + failedAssignments.slice(0, 5).map(f => `- ${f.curso} (${f.dem} alum) [Día ${f.dia}]`).join("\n") + (failedAssignments.length > 5 ? "\n..." : "");
+                }
+
+                alert(msg);
+
+            } catch (err) {
+                console.error(err);
+                alert("❌ ERROR CRÍTICO EN OPTIMIZACIÓN:\n" + err.message);
             }
         }
-        renderHorarioConCursos();
-    }
 
-    function renderHorarioConCursos() {
-        const cic = document.getElementById('selCiclo').value;
-        const cuerpo = document.getElementById('cuerpoLab');
-        const dataCiclo = horariosData[cic] || {};
-        cuerpo.innerHTML = "";
-        horas.forEach((h, i) => {
-            if(i === 6) cuerpo.innerHTML += `<tr><td colspan="7" style="background:#cbd5e0; height:10px; font-size:8px; text-align:center;">RECESO</td></tr>`;
-            let row = `<tr><td class="hour-cell">${h}</td>`;
-            for(let d=1; d<=6; d++) { // Actualizado a 6 para incluir Sábado
-                const key = `${i}-${d}`;
-                const bloques = dataCiclo[key] || [];
-                row += `<td>`;
-                bloques.forEach((inf, idx) => {
-                    const demanda = obtenerDemandaReal(inf.codigo);
-                    const lab = laboratorios.find(l => l.nombre === inf.lab);
-                    const dif = lab ? lab.capacidad - demanda : 0;
-                    row += `<div class="course-block" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${key}', ${idx})">
+        // Event Delegation Setup ... (No changes here, skipping for brevity but keeping implementation logic)
+        window.addEventListener('DOMContentLoaded', () => {
+            const cuerpo = document.getElementById('cuerpoLab');
+            cuerpo.addEventListener('dragover', (e) => { const target = e.target.closest('.course-block'); if (target) { e.preventDefault(); target.classList.add('drag-over'); } });
+            cuerpo.addEventListener('dragleave', (e) => { const target = e.target.closest('.course-block'); if (target) target.classList.remove('drag-over'); });
+            cuerpo.addEventListener('drop', (e) => { e.preventDefault(); const target = e.target.closest('.course-block'); if (target) { target.classList.remove('drag-over'); onDrop(e, target.dataset.key, parseInt(target.dataset.idx)); } });
+        });
+
+        const LAB_COLORS = [
+            "#e53e3e", "#38a169", "#3182ce", "#805ad5", "#d69e2e",
+            "#d53f8c", "#319795", "#dd6b20", "#00695c", "#553c9a"
+        ];
+
+        function renderHorarioConCursos() {
+            const cic = document.getElementById('selCiclo').value;
+            const cuerpo = document.getElementById('cuerpoLab');
+            const dataCiclo = horariosData[cic] || {};
+            let htmlContent = "";
+            horas.forEach((h, i) => {
+                if (i === 6) htmlContent += `<tr><td colspan="7" style="background:#cbd5e0; height:10px; font-size:8px; text-align:center;">RECESO</td></tr>`;
+                htmlContent += `<tr><td class="hour-cell">${h}</td>`;
+                for (let d = 1; d <= 6; d++) {
+                    const key = `${i}-${d}`;
+                    const bloques = dataCiclo[key] || [];
+                    htmlContent += `<td>`;
+                    bloques.forEach((inf, idx) => {
+                        const demanda = obtenerDemandaReal(inf.codigo);
+                        const lab = laboratorios.find(l => l.nombre === inf.lab);
+                        const dif = lab ? lab.capacidad - demanda : 0;
+
+                        // Determinar color
+                        let labColor = "var(--purple)";
+                        if (lab) {
+                            if (lab.color) labColor = lab.color;
+                            else {
+                                const idxLab = laboratorios.indexOf(lab);
+                                labColor = LAB_COLORS[idxLab % LAB_COLORS.length];
+                            }
+                        }
+
+                        htmlContent += `<div class="course-block" data-key="${key}" data-idx="${idx}">
                         <span class="course-title">${inf.course || inf.curso}</span>
-                        <span style="font-size:8px; color:#666;">👤 ${inf.docente} | Demanda: ${demanda}</span>
+                        <span style="font-size:8px; color:#666;"><i class="fa-solid fa-user"></i> ${inf.docente} | Demanda: ${demanda}</span>
                         ${inf.subTipo === "HP" ? `
                             ${inf.lab ? `
-                                <div class="lab-asignado">📍 ${inf.lab} <button class="btn-del-asig" onclick="quitarAsignacion('${key}', ${idx})">✕</button></div>
-                                <div class="aforo-badge ${dif < 0 ? 'exceso':'sobra'}">${dif < 0 ? '❌ Falta':'✅ Sobra'} ${Math.abs(dif)} PCs</div>
-                            ` : '<span style="color:var(--orange); font-size:8.5px; font-weight:bold;">⚠️ Arrastre Lab</span>'}
+                                <div class="lab-asignado" style="background:${labColor}"><i class="fa-solid fa-location-dot"></i> ${inf.lab} <button class="btn-del-asig" onclick="quitarAsignacion('${key}', ${idx})"><i class="fa-solid fa-xmark"></i></button></div>
+                                <div class="aforo-badge ${dif < 0 ? 'exceso' : 'sobra'}">${dif < 0 ? '<i class="fa-solid fa-circle-xmark"></i> Falta' : '<i class="fa-solid fa-circle-check"></i> Sobra'} ${Math.abs(dif)} PCs</div>
+                            ` : '<span style="color:var(--orange); font-size:8.5px; font-weight:bold;"><i class="fa-solid fa-triangle-exclamation"></i> Arrastre Lab</span>'}
                         ` : '<span style="color:#999; font-size:8px;">Teoría</span>'}
                     </div>`;
-                });
-                row += `</td>`;
+                    });
+                    htmlContent += `</td>`;
+                }
+                htmlContent += `</tr>`;
+            });
+            cuerpo.innerHTML = htmlContent;
+        }
+
+        async function agregarLab() {
+            const n = document.getElementById('labNom').value.toUpperCase().trim();
+            const c = document.getElementById('labCap').value;
+            const t = document.getElementById('labTags').value;
+
+            if (!n || !c) return alert("Faltan datos");
+
+            const duplicado = laboratorios.some(l => l.nombre === n && l.id !== labEditandoId);
+            if (duplicado) return alert("🚫 Ya existe un laboratorio con ese nombre.");
+
+            if (labEditandoId) {
+                const idx = laboratorios.findIndex(l => l.id === labEditandoId);
+                if (idx !== -1) {
+                    laboratorios[idx].nombre = n;
+                    laboratorios[idx].capacidad = parseInt(c);
+                    laboratorios[idx].tags = t.toUpperCase();
+                    // Keep existing color or assign if missing
+                    if (!laboratorios[idx].color) laboratorios[idx].color = LAB_COLORS[idx % LAB_COLORS.length];
+                }
+                cancelarEdicion();
+            } else {
+                const color = LAB_COLORS[laboratorios.length % LAB_COLORS.length];
+                laboratorios.push({ id: Date.now(), nombre: n, capacidad: parseInt(c), tags: t, color: color });
             }
-            cuerpo.innerHTML += row + `</tr>`;
-        });
-    }
 
-    function agregarLab() {
-        const n = document.getElementById('labNom').value, c = document.getElementById('labCap').value;
-        if(!n || !c) return alert("Faltan datos");
-        laboratorios.push({ id: Date.now(), nombre: n.toUpperCase(), capacidad: parseInt(c) });
-        renderListaLabs();
-        document.getElementById('labNom').value = ""; document.getElementById('labCap').value = "";
-    }
+            renderListaLabs();
+            document.getElementById('labNom').value = ""; document.getElementById('labCap').value = ""; document.getElementById('labTags').value = "";
+            await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
+        }
 
-    function renderListaLabs() {
-        const cont = document.getElementById('listaLabs');
-        cont.innerHTML = laboratorios.map(l => `<div class="lab-item-sidebar" draggable="true" ondragstart="onDragStart(event, '${l.nombre}')"><strong>${l.nombre}</strong> <span>${l.capacidad} PCs</span><button onclick="borrarLab(${l.id})" style="background:none; border:none; color:white; cursor:pointer;">🗑️</button></div>`).join("");
-    }
+        function prepararEdicion(id) {
+            const lab = laboratorios.find(l => l.id === id);
+            if (!lab) return;
+            labEditandoId = id;
+            document.getElementById('labNom').value = lab.nombre;
+            document.getElementById('labCap').value = lab.capacidad;
+            document.getElementById('labTags').value = lab.tags || "";
 
-    function borrarLab(id) { if(confirm("¿Eliminar?")) { laboratorios = laboratorios.filter(l => l.id !== id); renderListaLabs(); } }
-    function quitarAsignacion(key, idx) { horariosData[document.getElementById('selCiclo').value][key][idx].lab = ""; renderHorarioConCursos(); }
-    function limpiarAsignaciones() { if(confirm("¿Limpiar?")) { ciclos.forEach(c => { if(horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); }); renderHorarioConCursos(); } }
-    async function guardarAsignaciones() {
-        await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
-        await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosData, ultimaActualizacion: new Date() });
-        alert("✅ Sincronizado.");
-    }
-</script>
+            const btn = document.getElementById('btnAgregarLab');
+            btn.innerHTML = "<i class='fa-solid fa-floppy-disk'></i> GUARDAR CAMBIOS LAB";
+            btn.style.background = "#2b6cb0";
+            document.getElementById('btnCancelarEdit').style.display = 'inline-block';
+        }
+
+        function cancelarEdicion() {
+            labEditandoId = null;
+            document.getElementById('labNom').value = "";
+            document.getElementById('labCap').value = "";
+            document.getElementById('labTags').value = "";
+
+            const btn = document.getElementById('btnAgregarLab');
+            btn.innerText = "+ REGISTRAR LABORATORIO";
+            btn.style.background = "var(--blue)";
+            document.getElementById('btnCancelarEdit').style.display = 'none';
+        }
+
+        function renderListaLabs() {
+            const cont = document.getElementById('listaLabs');
+            cont.innerHTML = laboratorios.map((l, i) => {
+                const bgColor = l.color || LAB_COLORS[i % LAB_COLORS.length];
+                return `
+                <div class="lab-item-sidebar" style="background:${bgColor};" draggable="true" ondragstart="onDragStart(event, '${l.nombre}')">
+                    
+                    <!-- Encabezado: Nombre y Capacidad separados -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                         <strong style="font-size:11px; line-height:1.2; padding-right:4px;">${l.nombre}</strong>
+                         <span style="background:rgba(0,0,0,0.25); padding:2px 5px; border-radius:4px; font-size:9px; white-space:nowrap; font-weight:bold;">${l.capacidad} PCs</span>
+                    </div>
+
+                    <!-- Tags: Con mejor espaciado y legibilidad -->
+                    <div style="font-size:9px; color:rgba(255,255,255,0.95); margin-bottom:8px; line-height:1.3; word-wrap:break-word;">
+                        ${l.tags ? '<i class="fa-solid fa-tag"></i> ' + l.tags : '<span style="opacity:0.6; font-style:italic;">(Sin tags)</span>'}
+                    </div>
+
+                    <!-- Botones: Alineados al final -->
+                    <div style="display:flex; gap:5px; justify-content:flex-end; margin-top:auto; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px;">
+                        <button onclick="prepararEdicion(${l.id})" style="background:transparent; border:none; color:white; cursor:pointer; font-size:12px; opacity:0.9;" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="borrarLab(${l.id})" style="background:transparent; border:none; color:white; cursor:pointer; font-size:12px; opacity:0.9;" title="Borrar"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        async function borrarLab(id) {
+            if (confirm("¿Eliminar?")) {
+                if (labEditandoId === id) cancelarEdicion();
+                laboratorios = laboratorios.filter(l => l.id !== id);
+                renderListaLabs();
+                await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
+            }
+        }
+
+        function quitarAsignacion(key, idx) { horariosData[document.getElementById('selCiclo').value][key][idx].lab = ""; renderHorarioConCursos(); }
+        function limpiarAsignaciones() { if (confirm("¿Limpiar?")) { ciclos.forEach(c => { if (horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); }); renderHorarioConCursos(); } }
+        async function guardarAsignaciones() {
+            await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
+            await db.collection("planificacion").doc("config_reglas").set({ lista: reglasAsignacion });
+            await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosData, ultimaActualizacion: new Date() });
+            alert("✅ Sincronizado.");
+        }
+    </script>
 </body>
+
 </html>

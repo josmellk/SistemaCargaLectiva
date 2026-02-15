@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <script>
         function verificarYBloquear() {
-            if (!localStorage.getItem("accesoPermitido")) {
+            try {
+                if (!localStorage.getItem("accesoPermitido")) {
+                    window.location.replace("login.html");
+                }
+            } catch (e) {
+                console.error("Error al verificar acceso:", e);
                 window.location.replace("login.html");
             }
         }
@@ -17,455 +23,2017 @@
     </script>
     <title>Carga Académica - Gestión de Grupos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Libreria para mantener formatos (estilos) al editar Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
     <style>
-        :root { --blue: #1a3a5a; --light-blue: #3498db; --green: #27ae60; --purple: #8e44ad; --orange: #f39c12; --bg: #f4f7f9; --red: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 400px; background: white; border-right: 2px solid #ddd; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background: var(--blue); color: white; }
-        .search-container { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; }
-        .search-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 20px; outline: none; box-sizing: border-box; }
-        
-        /* ESTILO PARA EL CONTADOR DE ASIGNACIÓN */
-        .assignment-stats { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 5px; 
-            padding: 10px; 
-            background: #fff; 
+        :root {
+            --blue: #1a3a5a;
+            --light-blue: #3498db;
+            --green: #27ae60;
+            --purple: #8e44ad;
+            --orange: #f39c12;
+            --bg: #f4f7f9;
+            --red: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 400px;
+            background: white;
+            border-right: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: var(--blue);
+            color: white;
+        }
+
+        .search-container {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .assignment-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            padding: 10px;
+            background: #fff;
             border-bottom: 2px solid #ddd;
         }
-        .stat-box { 
-            text-align: center; 
-            padding: 5px; 
-            border-radius: 4px; 
-            font-size: 11px; 
-            font-weight: bold; 
+
+        .stat-box {
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
             color: white;
-            cursor: pointer; /* Agregado para indicar clic */
+            cursor: pointer;
             transition: opacity 0.2s;
         }
-        .stat-box:hover { opacity: 0.8; }
-        .bg-cg { background: var(--orange); }
-        .bg-ce { background: var(--blue); }
-        .bg-el { background: var(--purple); }
 
-        .course-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
-        
-        .course-card { 
-            background: #fff; border: 2px solid #b0bec5; padding: 12px; margin-bottom: 10px; 
-            border-radius: 8px; cursor: grab; font-size: 12px; transition: 0.2s; 
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.05); 
+        .stat-box:hover {
+            opacity: 0.8;
         }
-        .course-card:hover { border-color: var(--light-blue); background: #f0faff; }
-        .course-card.electivo-color { background: #f3e5f5; border-left: 6px solid var(--purple); }
-        .course-card.servicio-color { border-left: 6px solid var(--orange); }
-        
-        .tag-ciclo-card { background: #e0e0e0; color: #333; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 10px; margin-bottom: 5px; display: inline-block; }
-        .group-monitor { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc; display: flex; flex-wrap: wrap; gap: 4px; }
-        .group-tag { display: block; font-size: 10px; padding: 3px 6px; border-radius: 4px; color: white; font-weight: bold; width: 100%; box-sizing: border-box; margin-bottom: 2px; }
-        .tag-full-assigned { background: var(--green); }
-        .tag-hp-assigned { background: var(--purple); }
 
-        .main-content { flex-grow: 1; padding: 25px; overflow-y: auto; }
-        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap; }
-        
-        .docentes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
-        
-        .docente-container { 
-            background: white; border-radius: 8px; padding: 15px; min-height: 120px; 
-            transition: transform 0.2s ease; border: 2px solid #ccc; border-top: 5px solid var(--light-blue); 
+        .bg-cg {
+            background: var(--orange);
+        }
+
+        .bg-ce {
+            background: var(--blue);
+        }
+
+        .bg-el {
+            background: var(--purple);
+        }
+
+        .course-list {
+            overflow-y: auto;
+            padding: 10px;
+            flex-grow: 1;
+        }
+
+        .course-card {
+            background: #fff;
+            border: 2px solid #b0bec5;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 12px;
+            transition: 0.2s;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .course-card:hover {
+            border-color: var(--light-blue);
+            background: #f0faff;
+        }
+
+        .course-card.electivo-color {
+            background: #f3e5f5;
+            border-left: 6px solid var(--purple);
+        }
+
+        .course-card.servicio-color {
+            border-left: 6px solid var(--orange);
+        }
+
+        .tag-ciclo-card {
+            background: #e0e0e0;
+            color: #333;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+
+        .group-monitor {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #ccc;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .group-tag {
+            display: block;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 2px;
+        }
+
+        .tag-full-assigned {
+            background: var(--green);
+        }
+
+        .tag-hp-assigned {
+            background: var(--purple);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 0;
+            /* Removed padding to allow sticky header to touch edges */
+            overflow-y: auto;
+            position: relative;
+            /* Ensure stacking context */
+        }
+
+        .controls {
+            background: white;
+            padding: 15px 25px;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .docentes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 20px;
+            padding: 25px;
+            /* Moved padding here */
+        }
+
+        .docente-container {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+            transition: border-color 0.2s ease;
+            border: 2px solid #ccc;
+            border-top: 5px solid var(--light-blue);
             position: relative;
         }
-        .docente-container:hover { border-color: var(--light-blue); transform: scale(1.02); z-index: 10; }
-        .docente-container.drag-over { background: #e3f2fd; border: 2px dashed var(--light-blue); }
-        
-        .docente-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--blue); padding-bottom: 5px; }
-        .docente-info-main { display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
-        .docente-info-main strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: var(--blue); }
-        
-        .btn-docente-ctrl { cursor: pointer; border: none; background: none; font-size: 15px; opacity: 0.7; transition: 0.2s; padding: 2px; }
-        .btn-docente-ctrl:hover { opacity: 1; transform: scale(1.2); }
-        .total-hrs-badge { font-size: 16px; font-weight: bold; color: var(--blue); }
-        
-        .assigned-list { min-height: 50px; }
-        .assigned-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #f8f9fa; padding: 10px; margin-bottom: 5px; border-radius: 4px; 
-            border-left: 4px solid var(--blue); font-size: 11px; cursor: grab;
+
+        .docente-container:hover {
+            border-color: var(--light-blue);
+            z-index: 10;
+        }
+
+        .docente-container.drag-over {
+            background: #e3f2fd;
+            border: 2px dashed var(--light-blue);
+        }
+
+        .docente-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 5px;
+        }
+
+        .docente-info-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .docente-info-main strong {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            color: var(--blue);
+        }
+
+        .btn-docente-ctrl {
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 15px;
+            opacity: 0.7;
+            transition: 0.2s;
+            padding: 2px;
+        }
+
+        .btn-docente-ctrl:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .total-hrs-badge {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--blue);
+        }
+
+        .assigned-list {
+            min-height: 50px;
+        }
+
+        .assigned-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            border-left: 4px solid var(--blue);
+            font-size: 11px;
+            cursor: grab;
             position: relative;
         }
-        
-        .item-details { display: block; font-size: 10px; color: #555; margin-top: 3px; font-weight: bold; }
-        
-        .btn-del-course { 
-            color: white !important; background-color: var(--red) !important; border: none; 
-            border-radius: 4px; width: 22px; height: 22px; cursor: pointer; 
-            font-weight: bold; font-size: 12px; display: flex !important;
-            align-items: center; justify-content: center; margin-left: 10px;
+
+        .item-details {
+            display: block;
+            font-size: 10px;
+            color: #555;
+            margin-top: 3px;
+            font-weight: bold;
+        }
+
+        .btn-del-course {
+            color: white !important;
+            background-color: var(--red) !important;
+            border: none;
+            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
             flex-shrink: 0;
         }
 
-        .tag-badge { font-size: 9px; padding: 2px 4px; border-radius: 3px; color: white; font-weight: bold; margin-right: 5px; }
-        .bg-FULL { background: var(--green) !important; }
-        .bg-HP { background: var(--purple) !important; }
+        .tag-badge {
+            font-size: 9px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            margin-right: 5px;
+        }
 
-        .excel-btn-group { display: flex; gap: 5px; align-items: center; background: #f1f5f9; padding: 5px; border-radius: 6px; border: 1px solid #cbd5e0; }
-        .file-label { background: #718096; color: white; padding: 8px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-        .btn-process { background: var(--light-blue); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .bg-FULL {
+            background: var(--green) !important;
+        }
 
-        /* ESTILOS MODAL FLOTANTE */
+        .bg-HP {
+            background: var(--purple) !important;
+        }
+
+        .excel-btn-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e0;
+        }
+
+        .file-label {
+            background: #718096;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-process {
+            background: var(--light-blue);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-process:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-std {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-std:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
         }
+
         .modal-content {
-            background: white; width: 500px; max-height: 80vh; border-radius: 12px;
-            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: white;
+            width: 500px;
+            max-height: 80vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
+
         .modal-header {
-            padding: 15px 20px; background: var(--blue); color: white;
-            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px;
+            background: var(--blue);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .modal-body { padding: 20px; overflow-y: auto; }
-        .close-modal { cursor: pointer; font-size: 20px; font-weight: bold; }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
         .pending-item {
-            padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .pending-item:last-child { border-bottom: none; }
-        .pending-info { font-size: 13px; }
-        .pending-hours { font-weight: bold; color: var(--blue); font-size: 12px; }
+
+        .pending-item:last-child {
+            border-bottom: none;
+        }
+
+        .pending-info {
+            font-size: 13px;
+        }
+
+        .pending-hours {
+            font-weight: bold;
+            color: var(--blue);
+            font-size: 12px;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 3000;
+        }
+
+        .toast {
+            background: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-top: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: var(--red);
+        }
+
+        .toast.success {
+            background: var(--green);
+        }
+
+        .toast.info {
+            background: var(--blue);
+        }
 
         @media print {
-            @page { size: A4 portrait; margin: 1cm; }
-            html, body { background: white !important; height: auto !important; overflow: visible !important; display: block !important; width: 100% !important; }
-            .sidebar, .controls, .btn-del-course, .btn-docente-ctrl, .modal-overlay { display: none !important; }
-            .main-content { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; padding: 0 !important; margin: 0 !important; display: block !important; }
-            .docentes-grid { display: block !important; width: 100% !important; }
-            .docente-container { display: block !important; width: 100% !important; box-sizing: border-box !important; page-break-inside: avoid !important; margin-bottom: 20px !important; border: 2px solid #000 !important; padding: 10px !important; transform: none !important; box-shadow: none !important; }
-            .docente-header { display: table !important; width: 100% !important; border-bottom: 1px solid #000 !important; padding-bottom: 5px !important; }
-            .docente-info-main { display: table-cell !important; vertical-align: middle !important; width: 80% !important; }
-            .total-hrs-badge { display: table-cell !important; text-align: right !important; vertical-align: middle !important; color: #000 !important; font-weight: 900 !important; font-size: 16px !important; width: 20% !important; }
-            .assigned-item { border: 1px solid #999 !important; background: white !important; margin-bottom: 4px !important; padding: 8px !important; width: 100% !important; display: flex !important; }
-            .tag-badge { color: black !important; border: 1px solid #000 !important; font-weight: bold !important; padding: 2px 4px !important; }
-            .bg-FULL, .bg-HP { background: white !important; }
+            @page {
+                size: A4 portrait;
+                margin: 1cm;
+            }
+
+            html,
+            body {
+                background: white !important;
+                height: auto !important;
+                overflow: visible !important;
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .sidebar,
+            .controls,
+            .btn-del-course,
+            .btn-docente-ctrl,
+            .modal-overlay,
+            .toast-container {
+                display: none !important;
+            }
+
+            .main-content {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+            }
+
+            .docentes-grid {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .docente-container {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                page-break-inside: avoid !important;
+                margin-bottom: 20px !important;
+                border: 2px solid #000 !important;
+                padding: 10px !important;
+                transform: none !important;
+                box-shadow: none !important;
+            }
+
+            .docente-header {
+                display: table !important;
+                width: 100% !important;
+                border-bottom: 1px solid #000 !important;
+                padding-bottom: 5px !important;
+            }
+
+            .docente-info-main {
+                display: table-cell !important;
+                vertical-align: middle !important;
+                width: 80% !important;
+            }
+
+            .total-hrs-badge {
+                display: table-cell !important;
+                text-align: right !important;
+                vertical-align: middle !important;
+                color: #000 !important;
+                font-weight: 900 !important;
+                font-size: 16px !important;
+                width: 20% !important;
+            }
+
+            .assigned-item {
+                border: 1px solid #999 !important;
+                background: white !important;
+                margin-bottom: 4px !important;
+                padding: 8px !important;
+                width: 100% !important;
+                display: flex !important;
+            }
+
+            .tag-badge {
+                color: black !important;
+                border: 1px solid #000 !important;
+                font-weight: bold !important;
+                padding: 2px 4px !important;
+            }
+
+            .bg-FULL,
+            .bg-HP {
+                background: white !important;
+            }
+
+            /* Toggle Buttons for Assignment Mode */
+            .mode-toggle-group {
+                display: flex;
+                gap: 5px;
+                margin-top: 5px;
+            }
+
+            .btn-toggle {
+                flex: 1;
+                padding: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                background: rgba(0, 0, 0, 0.2);
+                color: rgba(255, 255, 255, 0.7);
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 11px;
+                transition: all 0.2s;
+            }
+
+            .btn-toggle:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+            }
+
+            .btn-toggle.active {
+                background: var(--light-blue);
+                color: white;
+                border: 2px solid white;
+                /* Thick white border */
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.4);
+                font-weight: 900;
+                transform: scale(1.05);
+                /* Make it bigger */
+                z-index: 5;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+                opacity: 1;
+            }
+
+            #btnModeHP.active {
+                background: var(--purple) !important;
+                border: 2px solid white !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fa-solid {
+            margin-right: 5px;
+        }
+
+        /* Toggle Buttons for Assignment Mode - MOVED HERE TO BE GLOBAL AND STRONG */
+        .mode-toggle-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-toggle {
+            flex: 1;
+            padding: 10px 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 11px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-toggle.active {
+            background: var(--light-blue) !important;
+            color: white !important;
+            border: 2px solid white !important;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.4) !important;
+            font-weight: 900 !important;
+            transform: scale(1.05);
+            z-index: 5;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            opacity: 1 !important;
+        }
+
+        #btnModeHP.active {
+            background: var(--purple) !important;
         }
     </style>
 </head>
+
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-header">
-        <h3 style="margin:0">📚 Asignación por Grupos</h3>
-        <div style="margin-top:10px;">
-            <label style="font-size: 11px; opacity: 0.9;">Modo de Asignación:</label>
-            <select id="modoArrastre" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border:none; font-weight:bold; cursor:pointer;">
-                <option value="FULL">CURSO COMPLETO (T + P)</option>
-                <option value="HP">SOLO PRÁCTICA (P)</option>
-            </select>
-        </div>
-    </div>
-    <div class="search-container"><input type="text" id="busquedaCurso" class="search-input" placeholder="🔍 Buscar curso o código..." onkeyup="renderCursos()"></div>
-    
-    <div class="assignment-stats">
-        <div class="stat-box bg-cg" onclick="mostrarPendientes('CG')" title="Ver pendientes CG">CG: <span id="statCG">0/0</span></div>
-        <div class="stat-box bg-ce" onclick="mostrarPendientes('CE')" title="Ver pendientes CE">CE: <span id="statCE">0/0</span></div>
-        <div class="stat-box bg-el" onclick="mostrarPendientes('EL')" title="Ver pendientes EL">EL: <span id="statEL">0/0</span></div>
-    </div>
-
-    <div class="course-list" id="listaCursos"></div>
-</div>
-
-<div class="main-content">
-    <div class="controls">
-        <div class="excel-btn-group">
-            <label for="excelDocentes" class="file-label" id="fileLabelText">📁 SELECCIONAR EXCEL</label>
-            <input type="file" id="excelDocentes" accept=".xlsx,.xls" style="display: none;" onchange="document.getElementById('fileLabelText').innerText = this.files[0].name">
-            <button onclick="importarDocentesExcel()" class="btn-process">🚀 CARGAR DOCENTES</button>
-        </div>
-        <input type="text" id="nombreDocente" placeholder="Nombre del docente..." style="padding: 10px; border:1px solid #ddd; border-radius:4px; flex-grow:1">
-        <button onclick="agregarDocente()" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">+ AÑADIR</button>
-        <button onclick="window.print()" style="background:var(--green); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ IMPRIMIR</button>
-        <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
-        <button onclick="limpiarSoloCargas()" style="background:#7f8c8d; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">LIMPIAR CURSOS</button>
-        <button onclick="abrirHorarios()" style="background:#2c3e50; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">📅 HORARIOS</button>
-    </div>
-    <div class="docentes-grid" id="gridDocentes"></div>
-</div>
-
-<div id="modalPendientes" class="modal-overlay" onclick="cerrarModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h3 id="modalTitulo" style="margin:0">Cursos Pendientes</h3>
-            <span class="close-modal" onclick="cerrarModal()">&times;</span>
-        </div>
-        <div class="modal-body" id="modalBody">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0"><i class="fa-solid fa-layer-group"></i> Asignación por Grupos</h3>
+            <div style="margin-top:10px;">
+                <label style="font-size: 11px; opacity: 0.9;">Modo de Asignación:</label>
+                <input type="hidden" id="modoArrastre" value="FULL">
+                <div class="mode-toggle-group">
+                    <button class="btn-toggle active" id="btnModeFULL" onclick="setModoArrastre('FULL')">
+                        <i class="fa-solid fa-layer-group"></i> T+P
+                    </button>
+                    <button class="btn-toggle" id="btnModeHP" onclick="setModoArrastre('HP')">
+                        <i class="fa-solid fa-flask"></i> SOLO P
+                    </button>
+                </div>
             </div>
+        </div>
+        <div class="search-container"><input type="text" id="busquedaCurso" class="search-input"
+                placeholder="&#xf002; Buscar curso o código..." style="font-family:Arial, FontAwesome"
+                onkeyup="renderCursosDebounced()"></div>
+
+        <div class="assignment-stats">
+            <div class="stat-box bg-cg" onclick="mostrarPendientes('CG')" title="Ver pendientes CG">CG: <span
+                    id="statCG">0/0</span></div>
+            <div class="stat-box bg-ce" onclick="mostrarPendientes('CE')" title="Ver pendientes CE">CE: <span
+                    id="statCE">0/0</span></div>
+            <div class="stat-box bg-el" onclick="mostrarPendientes('EL')" title="Ver pendientes EL">EL: <span
+                    id="statEL">0/0</span></div>
+        </div>
+
+        <div class="course-list" id="listaCursos"></div>
     </div>
-</div>
 
-<script>
-    function cerrarSesion() {
-        localStorage.removeItem("accesoPermitido");
-        window.location.replace("login.html");
-    }
+    <div class="main-content">
+        <div class="controls">
+            <div class="excel-btn-group">
 
-    const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+                <label for="excelDocentes" class="file-label btn-std" id="fileLabelText"><i
+                        class="fa-solid fa-folder-open"></i> EXCEL DOCENTES</label>
+                <input type="file" id="excelDocentes" accept=".xlsx,.xls" style="display: none;"
+                    onchange="document.getElementById('fileLabelText').innerHTML = '<i class=\'fa-solid fa-file-excel\'></i> ' + this.files[0].name">
+                <button onclick="importarDocentesExcel()" class="btn-process btn-std"><i class="fa-solid fa-upload"></i>
+                    CARGAR</button>
+            </div>
+            <input type="text" id="nombreDocente" placeholder="Nombre del docente..."
+                style="padding: 10px; border:1px solid #ddd; border-radius:8px; flex-grow:1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
 
-    let mallaRaw = [], docentes = [];
-    const LISTA_16_CURSOS = ["REDACCION UNIVERSITARIA Y ORATORIA", "INGLES", "REALIDAD REGIONAL Y NACIONAL", "EXPRESION ARTISTICA", "DIBUJO DE INGENIERIA", "MATEMATICA BASICA I", "INGLES TECNICO", "INGENIERIA ECONOMICA", "MATEMATICA BASICA II", "CALCULO DIFERENCIAL E INTEGRAL", "CALCULO MULTIVARIABLE", "FISICA GENERAL", "COSTOS Y PRESUPUESTOS", "ESTADISTICA Y PROBABILIDADES", "ECUACIONES DIFERENCIALES", "ESTADISTICA INFERENCIAL"];
+            <button onclick="agregarDocente()" class="btn-std" style="background:var(--blue);">
+                <i class="fa-solid fa-plus"></i> AÑADIR
+            </button>
 
-    const cleanNombre = (t) => t ? t.toString().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+            <button onclick="abrirModalExcel()" class="btn-std" style="background:#27ae60; margin-right:5px;">
+                <i class="fa-solid fa-file-excel"></i> EXCEL PLANTILLA
+            </button>
 
-    window.onload = async () => {
-        const config = await db.collection("planificacion").doc("config_general").get();
-        if(config.exists) mallaRaw = config.data().mallaParaDocentes || [];
-        const docs = await db.collection("planificacion").doc("lista_docentes").get();
-        if(docs.exists) docentes = docs.data().docentes || [];
-        renderCursos(); renderDocentes(); 
-    };
+            <button onclick="limpiarSoloCargas()" class="btn-std" style="background:#7f8c8d;">
+                LIMPIAR CURSOS
+            </button>
+        </div>
+        <div class="docentes-grid" id="gridDocentes"></div>
+    </div>
 
-    function importarDocentesExcel() {
-        const file = document.getElementById('excelDocentes').files[0];
-        if (!file) return alert("Selecciona un archivo.");
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const workbook = XLSX.read(e.target.result, { type: 'binary' });
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            rows.forEach(row => {
-                const nombre = (row["DOCENTE"] || Object.values(row)[0] || "").toString().trim().toUpperCase();
-                if (nombre && !docentes.find(d => d.nombre === nombre)) {
-                    docentes.push({ id: Date.now() + Math.random(), nombre: nombre, carga: [] });
-                }
-            });
-            guardarYRender();
-        };
-        reader.readAsBinaryString(file);
-    }
+    <div id="modalPendientes" class="modal-overlay" onclick="cerrarModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitulo" style="margin:0">Cursos Pendientes</h3>
+                <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+        </div>
+    </div>
 
-    function renderCursos() {
-        const container = document.getElementById('listaCursos');
-        const busqueda = document.getElementById('busquedaCurso').value.toLowerCase();
-        container.innerHTML = "";
+    <!-- Modal Configuración Excel -->
+    <div id="modalConfigExcel" class="modal-overlay">
+        <div class="modal-content" style="width: 700px; max-height: 90vh;" onclick="event.stopPropagation()">
+            <div class="modal-header" style="background: var(--green);">
+                <h3 style="margin:0"><i class="fa-solid fa-gear"></i> Configurar Plantilla Excel</h3>
+                <span class="close-modal"
+                    onclick="document.getElementById('modalConfigExcel').style.display='none'">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:12px; color:#666; margin-bottom:15px;">
+                    Plantilla ya almacenada, configurar celdas de impresión si es necesario.
+                </p>
 
-        // Inicializar contadores para las estadísticas
-        let totalCG = 0, asigCG = 0;
-        let totalCE = 0, asigCE = 0;
-        let totalEL = 0, asigEL = 0;
+                <!-- ZONA DE PLANTILLA PERSONALIZADA -->
+                <div class="cloud-actions"
+                    style="border: 2px dashed #3498db; background: #f0f8ff; padding: 10px; margin-bottom: 20px; border-radius: 6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0; color:#2980b9; font-size:13px;"><i class="fa-solid fa-cloud"></i> Plantilla
+                            de Reporte (Excel)
+                        </h4>
+                        <span id="statusPlantilla"
+                            style="font-size:11px; font-weight:bold; color:#f39c12;">Verificando...</span>
+                    </div>
 
-        mallaRaw.forEach((c) => {
-            const cod = c["CÓD.ASIG."];
-            const historial = [];
-            let estaAsignado = false;
+                    <div style="display:flex; gap:10px; align-items:center; justify-content: space-between;">
+                        <!-- Input File -->
+                        <div style="flex-grow:1;">
+                            <input type="file" id="plantillaFile" accept=".xlsx" style="font-size:11px; width:100%;">
+                        </div>
 
-            docentes.forEach(d => {
-                d.carga.forEach(cur => { 
-                    if(cur.codigo === cod) {
-                        historial.push({ docente: d.nombre, tipo: cur.tipo });
-                        estaAsignado = true;
+                        <!-- Botón Descargar -->
+                        <div style="display:flex; gap:5px;">
+                            <button id="btnDescargarPlantilla" onclick="descargarPlantilla()" class="btn-std"
+                                style="display:none; background:var(--green); font-size:11px; padding:5px 10px;">
+                                <i class="fa-solid fa-download"></i> Descargar Actual
+                            </button>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:#888; margin-top:5px; font-style:italic;">
+                        * Sube tu propio formato Excel. Se usará este archivo para generar el reporte.
+                    </div>
+                </div>
+
+                <div class="config-container">
+                    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                        <button id="btnEditConfig" onclick="toggleEditConfig()" class="btn-std"
+                            style="background: #f39c12; font-size:11px;">
+                            <i class="fa-solid fa-lock-open"></i> Editar Configuración
+                        </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                        <!-- Configuración del Patrón -->
+                        <fieldset id="fieldSetPatron" style="border:1px solid #ccc; padding:10px; border-radius:4px;"
+                            disabled>
+                            <legend style="font-size:12px; font-weight:bold; color:var(--red);">1. Definición del Bloque
+                                (Patrón)</legend>
+                            <p style="font-size:10px; color:#555; margin:0 0 5px 0;">Define las filas que componen UN
+                                solo
+                                bloque de docente.</p>
+
+                            <div style="display:flex; gap:10px;">
+                                <div><label style="font-size:11px; display:block;">Inicio Bloque:</label><input
+                                        type="number" id="blockStartRow" value="3" style="width:50px; padding:4px;">
+                                </div>
+                                <div><label style="font-size:11px; display:block;">Fin Bloque:</label><input
+                                        type="number" id="blockEndRow" value="10" style="width:50px; padding:4px;">
+                                </div>
+                            </div>
+                            <div style="margin-top:10px;">
+                                <label style="font-size:11px; display:block;">Celda Docente (Dentro):</label>
+                                <input type="text" id="cellDocenteBlock" placeholder="ej. C3"
+                                    style="width:80px; padding:4px;">
+                            </div>
+                            <div style="margin-top:5px;">
+                                <label style="font-size:11px; display:block;">Inicio Cursos (Dentro):</label>
+                                <input type="number" id="rowCursosBlock" value="6" style="width:50px; padding:4px;">
+                            </div>
+                        </fieldset>
+
+                        <!-- Configuración de Columnas -->
+                        <fieldset id="fieldSetColumnas" style="border:1px solid #ccc; padding:10px; border-radius:4px;"
+                            disabled>
+                            <legend style="font-size:12px; font-weight:bold; color:var(--green);">2. Mapeo de Columnas
+                            </legend>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                                <div><label style="font-size:10px;">N°:</label><input type="text" id="colN"
+                                        placeholder="A" class="col-input"></div>
+                                <div><label style="font-size:10px;">Cód:</label><input type="text" id="colCodigo"
+                                        placeholder="B" class="col-input"></div>
+                                <div><label style="font-size:10px;">Curso:</label><input type="text" id="colCurso"
+                                        placeholder="C" class="col-input"></div>
+                                <div><label style="font-size:10px;">HT:</label><input type="text" id="colHT"
+                                        placeholder="F" class="col-input"></div>
+                                <div><label style="font-size:10px;">HP:</label><input type="text" id="colHP"
+                                        placeholder="G" class="col-input"></div>
+                                <div><label style="font-size:10px;">Total:</label><input type="text" id="colTH"
+                                        placeholder="H" class="col-input"></div>
+                                <div><label style="font-size:10px;">Créd:</label><input type="text" id="colCred"
+                                        placeholder="I" class="col-input"></div>
+                                <div><label style="font-size:10px;">Sec:</label><input type="text" id="colGrupo"
+                                        placeholder="J" class="col-input"></div>
+                                <div><label style="font-size:10px;">Esc:</label><input type="text" id="colEscuela"
+                                        placeholder="K" class="col-input"></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <div style="text-align:right;">
+                    <button onclick="document.getElementById('modalConfigExcel').style.display='none'" class="btn-std"
+                        style="background:#ccc; color:#333;">Cancelar</button>
+                    <button onclick="generarReporteConPlantilla()" class="btn-std" style="background:var(--blue);"><i
+                            class="fa-solid fa-floppy-disk"></i>
+                        GENERAR REPORTE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .col-input {
+            width: 30px;
+            padding: 2px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+    </style>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function cerrarSesion() {
+            localStorage.removeItem("accesoPermitido");
+            window.location.replace("login.html");
+        }
+
+        const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let mallaRaw = [], docentes = [];
+        let LISTA_16_CURSOS = ["REDACCION UNIVERSITARIA Y ORATORIA", "INGLES", "REALIDAD REGIONAL Y NACIONAL", "EXPRESION ARTISTICA", "DIBUJO DE INGENIERIA", "MATEMATICA BASICA I", "INGLES TECNICO", "INGENIERIA ECONOMICA", "MATEMATICA BASICA II", "CALCULO DIFERENCIAL E INTEGRAL", "CALCULO MULTIVARIABLE", "FISICA GENERAL", "COSTOS Y PRESUPUESTOS", "ESTADISTICA Y PROBABILIDADES", "ECUACIONES DIFERENCIALES", "ESTADISTICA INFERENCIAL"];
+
+        const cleanNombre = (t) => t ? t.toString().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+
+        let unsubscribeDocentes = null;
+
+        window.onload = () => {
+            // 1. Habilitar Persistencia Offline (Si es posible)
+            db.enablePersistence()
+                .catch((err) => {
+                    if (err.code == 'failed-precondition') {
+                        console.warn("Persistencia fallida: Múltiples pestañas abiertas.");
+                    } else if (err.code == 'unimplemented') {
+                        console.warn("Persistencia no soportada por el navegador.");
                     }
                 });
+
+            // 2. Cargar caché local para renderizado instantáneo (Optimistic Load)
+            const cachedConfig = localStorage.getItem("cached_config_general");
+            if (cachedConfig) {
+                try {
+                    const data = JSON.parse(cachedConfig);
+                    mallaRaw = data.mallaParaDocentes || [];
+                    if (data.cursos_generales) LISTA_16_CURSOS = data.cursos_generales;
+                    // No renderizamos cursos aún porque necesitamos docentes, 
+                    // pero ya tenemos la configuración lista.
+                } catch (e) { console.error("Error leyendo caché local:", e); }
+            }
+
+            // 3. Carga Paralela (No bloqueante)
+
+            // A. Suscripción a Docentes (Inmediata)
+            unsubscribeDocentes = db.collection("planificacion").doc("lista_docentes")
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const nuevaLista = doc.data().docentes || [];
+                        docentes = nuevaLista;
+                        renderCursos();
+                        renderDocentes();
+                    }
+                }, (error) => {
+                    console.error("Error escuchando cambios:", error);
+                    showToast("Error de conexión con la base de datos", "error");
+                });
+
+            // B. Actualización de Configuración en segundo plano (Stale-while-revalidate)
+            db.collection("planificacion").doc("config_general").get().then(config => {
+                if (config.exists) {
+                    const data = config.data();
+                    const newMalla = data.mallaParaDocentes || [];
+                    const newCursos = data.cursos_generales || [];
+
+                    // Solo actualizar si hay cambios respecto al caché
+                    if (JSON.stringify(newMalla) !== JSON.stringify(mallaRaw) ||
+                        JSON.stringify(newCursos) !== JSON.stringify(LISTA_16_CURSOS)) {
+
+                        mallaRaw = newMalla;
+                        if (newCursos.length > 0) LISTA_16_CURSOS = newCursos;
+
+                        // Guardar en caché para la próxima
+                        localStorage.setItem("cached_config_general", JSON.stringify({
+                            mallaParaDocentes: mallaRaw,
+                            cursos_generales: LISTA_16_CURSOS
+                        }));
+
+                        renderCursos(); // Actualizar UI con nueva configuración
+                        console.log("Configuración actualizada desde nube.");
+                    }
+                }
+            }).catch(error => {
+                console.error("Error obteniendo configuración:", error);
+                // Si falla y no teníamos caché, mostrar error. Si teníamos caché, el usuario ni se entera.
+                if (mallaRaw.length === 0) showToast("Error al cargar configuración.", "error");
+            });
+        };
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = "<i class='fa-solid fa-circle-info'></i>";
+            if (type === "success") icon = "<i class='fa-solid fa-circle-check'></i>";
+            if (type === "error") icon = "<i class='fa-solid fa-triangle-exclamation'></i>";
+
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            void toast.offsetWidth;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function importarDocentesExcel() {
+            const file = document.getElementById('excelDocentes').files[0];
+            if (!file) return showToast("Selecciona un archivo primero.", "error");
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    let agregados = 0;
+                    rows.forEach(row => {
+                        const nombre = (row["DOCENTE"] || Object.values(row)[0] || "").toString().trim().toUpperCase();
+                        if (nombre && !docentes.find(d => d.nombre === nombre)) {
+                            docentes.push({ id: Date.now() + Math.random(), nombre: nombre, carga: [] });
+                            agregados++;
+                        }
+                    });
+                    if (agregados > 0) {
+                        renderDocentes(); // Optimistic update
+                        guardarEnBD().then(() => showToast(`Se importaron ${agregados} docentes.`, "success"));
+                    } else {
+                        showToast("No se encontraron docentes nuevos.", "info");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    showToast("Error al procesar el Excel.", "error");
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        const renderCursosDebounced = debounce(renderCursos, 300);
+
+        function renderCursos() {
+            const container = document.getElementById('listaCursos');
+            if (!container) return;
+
+            const busquedaInput = document.getElementById('busquedaCurso');
+            const busqueda = busquedaInput ? busquedaInput.value.toLowerCase() : "";
+            container.innerHTML = "";
+
+            let totalCG = 0, asigCG = 0;
+            let totalCE = 0, asigCE = 0;
+            let totalEL = 0, asigEL = 0;
+
+            if (!Array.isArray(mallaRaw)) return;
+
+            // OPTIMIZACIÓN: Crear mapa O(N) para evitar loop anidado O(N*M)
+            const assignmentsMap = new Map();
+            if (docentes && Array.isArray(docentes)) {
+                docentes.forEach(d => {
+                    if (d.carga && Array.isArray(d.carga)) {
+                        d.carga.forEach(cur => {
+                            if (!assignmentsMap.has(cur.codigo)) {
+                                assignmentsMap.set(cur.codigo, []);
+                            }
+                            assignmentsMap.get(cur.codigo).push({ docente: d.nombre, tipo: cur.tipo });
+                        });
+                    }
+                });
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            mallaRaw.forEach((c) => {
+                if (!c["CÓD.ASIG."]) return;
+
+                const cod = c["CÓD.ASIG."];
+                // Lookup optimizado O(1)
+                const historial = assignmentsMap.get(cod) || [];
+                const estaAsignado = historial.length > 0;
+
+                const esElectivo = (c["TC"] || "").toString().trim().toUpperCase() === "E";
+                const esGeneral = LISTA_16_CURSOS.some(n => cleanNombre(c["CURSO"] || "").includes(n));
+
+                if (esElectivo) {
+                    totalEL++;
+                    if (estaAsignado) asigEL++;
+                } else if (esGeneral) {
+                    totalCG++;
+                    if (estaAsignado) asigCG++;
+                } else {
+                    totalCE++;
+                    if (estaAsignado) asigCE++;
+                }
+
+                const cursoNombre = c["CURSO"] || "";
+                if ((cursoNombre + cod).toLowerCase().includes(busqueda)) {
+                    const card = document.createElement('div');
+                    let claseColor = "";
+                    if (esElectivo) claseColor = 'electivo-color';
+                    else if (esGeneral) claseColor = 'servicio-color';
+
+                    card.className = `course-card ${claseColor}`;
+                    card.draggable = true;
+                    const monitorHTML = historial.map(h => `<div class="group-tag ${h.tipo === 'FULL' ? 'tag-full-assigned' : 'tag-hp-assigned'}">${h.tipo === 'FULL' ? 'T+P' : 'SOLO P'}<span style="font-size:8px; display:block;">${h.docente}</span></div>`).join("");
+                    card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"] || "?"}</span><br><strong>${cod}</strong> - ${cursoNombre}<br><small>H: T:${c["HT"] || 0} | P:${c["HP"] || 0}</small><div class="group-monitor">${monitorHTML}</div>`;
+                    card.ondragstart = (e) => {
+                        e.dataTransfer.setData("courseCode", cod);
+                        e.dataTransfer.setData("modo", document.getElementById('modoArrastre').value);
+                        e.dataTransfer.setData("sourceDocId", "sidebar");
+                    };
+                    fragment.appendChild(card);
+                }
             });
 
-            // LÓGICA DE CONTADORES
-            const esElectivo = (c["TC"]||"").toString().trim().toUpperCase() === "E";
-            const esGeneral = LISTA_16_CURSOS.some(n => cleanNombre(c["CURSO"]||"").includes(n));
+            container.appendChild(fragment);
 
-            if (esElectivo) {
-                totalEL++;
-                if (estaAsignado) asigEL++;
-            } else if (esGeneral) {
-                totalCG++;
-                if (estaAsignado) asigCG++;
+            const updateStat = (id, actual, total) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = `${actual}/${total}`;
+            };
+            updateStat('statCG', asigCG, totalCG);
+            updateStat('statCE', asigCE, totalCE);
+            updateStat('statEL', asigEL, totalEL);
+        }
+
+        function mostrarPendientes(tipo) {
+            const modal = document.getElementById('modalPendientes');
+            const modalBody = document.getElementById('modalBody');
+            const modalTitulo = document.getElementById('modalTitulo');
+
+            modalBody.innerHTML = "";
+            let nombreTipo = tipo === 'CG' ? 'Generales' : (tipo === 'CE' ? 'Especialidad' : 'Electivos');
+            modalTitulo.innerText = `Pendientes: Cursos ${nombreTipo}`;
+
+            let pendientes = mallaRaw.filter(c => {
+                const esElectivo = (c["TC"] || "").toString().trim().toUpperCase() === "E";
+                const esGeneral = LISTA_16_CURSOS.some(n => cleanNombre(c["CURSO"] || "").includes(n));
+
+                let coincideTipo = false;
+                if (tipo === 'EL') coincideTipo = esElectivo;
+                else if (tipo === 'CG') coincideTipo = esGeneral;
+                else coincideTipo = (!esElectivo && !esGeneral);
+
+                if (!coincideTipo) return false;
+
+                const cod = c["CÓD.ASIG."];
+                return !docentes.some(d => d.carga && d.carga.some(cur => cur.codigo === cod));
+            });
+
+            if (pendientes.length === 0) {
+                modalBody.innerHTML = "<div style='text-align:center; padding:20px; color:green; font-weight:bold;'>✅ Todos los cursos de este tipo han sido asignados.</div>";
             } else {
-                totalCE++;
-                if (estaAsignado) asigCE++;
-            }
-            
-            if ((c["CURSO"] + cod).toLowerCase().includes(busqueda)) {
-                const card = document.createElement('div');
-                let claseColor = "";
-                if (esElectivo) claseColor = 'electivo-color';
-                else if (esGeneral) claseColor = 'servicio-color';
-                
-                card.className = `course-card ${claseColor}`;
-                card.draggable = true;
-                const monitorHTML = historial.map(h => `<div class="group-tag ${h.tipo === 'FULL' ? 'tag-full-assigned' : 'tag-hp-assigned'}">${h.tipo === 'FULL' ? 'T+P' : 'SOLO P'}<span style="font-size:8px; display:block;">${h.docente}</span></div>`).join("");
-                card.innerHTML = `<span class="tag-ciclo-card">CICLO ${c["CICLO"]}</span><br><strong>${cod}</strong> - ${c["CURSO"]}<br><small>H: T:${c["HT"]} | P:${c["HP"]}</small><div class="group-monitor">${monitorHTML}</div>`;
-                card.ondragstart = (e) => { 
-                    e.dataTransfer.setData("courseCode", cod); 
-                    e.dataTransfer.setData("modo", document.getElementById('modoArrastre').value);
-                    e.dataTransfer.setData("sourceDocId", "sidebar");
-                };
-                container.appendChild(card);
-            }
-        });
-
-        // Actualizar visualmente los contadores
-        document.getElementById('statCG').innerText = `${asigCG}/${totalCG}`;
-        document.getElementById('statCE').innerText = `${asigCE}/${totalCE}`;
-        document.getElementById('statEL').innerText = `${asigEL}/${totalEL}`;
-    }
-
-    // --- FUNCIÓN PARA MOSTRAR PENDIENTES EN VENTANA FLOTANTE ---
-    function mostrarPendientes(tipo) {
-        const modal = document.getElementById('modalPendientes');
-        const modalBody = document.getElementById('modalBody');
-        const modalTitulo = document.getElementById('modalTitulo');
-        
-        modalBody.innerHTML = "";
-        let nombreTipo = tipo === 'CG' ? 'Generales' : (tipo === 'CE' ? 'Especialidad' : 'Electivos');
-        modalTitulo.innerText = `Pendientes: Cursos ${nombreTipo}`;
-
-        let pendientes = mallaRaw.filter(c => {
-            const esElectivo = (c["TC"]||"").toString().trim().toUpperCase() === "E";
-            const esGeneral = LISTA_16_CURSOS.some(n => cleanNombre(c["CURSO"]||"").includes(n));
-            
-            // Filtrar por el tipo que se hizo clic
-            let coincideTipo = false;
-            if(tipo === 'EL') coincideTipo = esElectivo;
-            else if(tipo === 'CG') coincideTipo = esGeneral;
-            else coincideTipo = (!esElectivo && !esGeneral);
-
-            if(!coincideTipo) return false;
-
-            // Verificar si NO está asignado a ningún docente
-            const cod = c["CÓD.ASIG."];
-            return !docentes.some(d => d.carga.some(cur => cur.codigo === cod));
-        });
-
-        if(pendientes.length === 0) {
-            modalBody.innerHTML = "<div style='text-align:center; padding:20px; color:green; font-weight:bold;'>✅ Todos los cursos de este tipo han sido asignados.</div>";
-        } else {
-            pendientes.forEach(p => {
-                modalBody.innerHTML += `
+                pendientes.forEach(p => {
+                    modalBody.innerHTML += `
                     <div class="pending-item">
                         <div class="pending-info">
                             <strong>${p["CÓD.ASIG."]}</strong> - ${p["CURSO"]}<br>
                             <small>Ciclo: ${p["CICLO"]}</small>
                         </div>
-                        <div class="pending-hours">HT: ${p["HT"]} | HP: ${p["HP"]}</div>
+                        <div class="pending-hours">HT: ${p["HT"] || 0} | HP: ${p["HP"] || 0}</div>
                     </div>
                 `;
+                });
+            }
+
+            modal.style.display = "flex";
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalPendientes').style.display = "none";
+        }
+
+        async function procesarEntrega(targetDocId, courseCode, modo, sourceDocId, itemIndex) {
+            const targetDoc = docentes.find(d => d.id == targetDocId);
+            if (!targetDoc) return showToast("Error: Docente destino no encontrado.", "error");
+
+            const curso = mallaRaw.find(c => c["CÓD.ASIG."] === courseCode);
+            if (!curso) return showToast("Error: El curso no existe en la malla actual.", "error");
+
+            if (targetDoc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) {
+                return showToast("Este docente ya tiene asignado este curso/modalidad.", "info");
+            }
+
+            if (sourceDocId !== "sidebar" && sourceDocId != targetDocId) {
+                const oldDoc = docentes.find(d => d.id == sourceDocId);
+                if (oldDoc && oldDoc.carga) {
+                    oldDoc.carga.splice(itemIndex, 1);
+                }
+            }
+
+            let ht = parseInt(curso["HT"]) || 0;
+            let hp = parseInt(curso["HP"]) || 0;
+            let horasTotales = modo === 'FULL' ? (ht + hp) : hp;
+
+            targetDoc.carga.push({
+                nombre: `[C-${curso["CICLO"] || "?"}] ${curso["CURSO"] || "SIN NOMBRE"}`,
+                codigo: courseCode,
+                horas: horasTotales,
+                ht: ht,
+                hp: hp,
+                tipo: modo
+            });
+
+            // OPTIMISTIC UPDATE: Render immediately
+            renderCursos();
+            renderDocentes();
+            showToast("Asignación realizada (guardando...)", "info");
+
+            // Background save
+            guardarEnBD().catch(e => {
+                console.error(e);
+                showToast("Error al guardar en la nube. Verifique conexión.", "error");
             });
         }
 
-        modal.style.display = "flex";
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalPendientes').style.display = "none";
-    }
-
-    function procesarEntrega(targetDocId, courseCode, modo, sourceDocId, itemIndex) {
-        if (sourceDocId !== "sidebar" && sourceDocId != targetDocId) {
-            const oldDoc = docentes.find(d => d.id == sourceDocId);
-            if (oldDoc) oldDoc.carga.splice(itemIndex, 1);
+        // OPTIMIZACIÓN: Debounce para guardado en base de datos
+        let saveTimeout;
+        function scheduleSave() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                guardarEnBD().then(() => {
+                    showToast("Cambios guardados.", "success");
+                }).catch(() => {
+                    showToast("Error al guardar cambios.", "error");
+                });
+            }, 2000);
         }
-        const targetDoc = docentes.find(d => d.id == targetDocId);
-        const curso = mallaRaw.find(c => c["CÓD.ASIG."] === courseCode);
-        if (targetDoc.carga.some(c => c.codigo === courseCode && c.tipo === modo)) return alert("Ya asignado.");
-        
-        let ht = curso["HT"] || 0;
-        let hp = curso["HP"] || 0;
-        let horasTotales = modo === 'FULL' ? (parseInt(ht)||0) + (parseInt(hp)||0) : parseInt(hp)||0;
-        
-        targetDoc.carga.push({ 
-            nombre: `[C-${curso["CICLO"]}] ${curso["CURSO"]}`, 
-            codigo: courseCode, 
-            horas: horasTotales,
-            ht: ht,
-            hp: hp,
-            tipo: modo 
-        });
-        guardarYRender();
-    }
 
-    function renderDocentes() {
-        const grid = document.getElementById('gridDocentes');
-        grid.innerHTML = "";
-        docentes.forEach(doc => {
+        function getDocenteCardHTML(doc) {
+            const carga = doc.carga || [];
+            const totalHoras = carga.reduce((a, b) => a + (b.horas || 0), 0);
+
+            return `
+            <div class="docente-header">
+                <div class="docente-info-main">
+                    <button class="btn-docente-ctrl" onclick="editarDocente(${doc.id})"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-docente-ctrl" onclick="eliminarDocente(${doc.id})"><i class="fa-solid fa-trash"></i></button>
+                    <strong><i class="fa-solid fa-user-tie"></i> ${doc.nombre}</strong>
+                </div>
+                <div class="total-hrs-badge">${totalHoras}h</div>
+            </div>
+            <div class="assigned-list">
+                ${carga.map((item, i) => {
+                let htVal = item.ht;
+                let hpVal = item.hp;
+                if (htVal === undefined || hpVal === undefined) {
+                    const cRef = mallaRaw.find(m => m["CÓD.ASIG."] === item.codigo);
+                    if (cRef) {
+                        htVal = cRef["HT"] || 0;
+                        hpVal = cRef["HP"] || 0;
+                    } else {
+                        htVal = "?"; hpVal = "?";
+                    }
+                }
+
+                return `
+                    <div class="assigned-item" draggable="true" 
+                            ondragstart="event.dataTransfer.setData('courseCode','${item.codigo}'); 
+                                        event.dataTransfer.setData('modo','${item.tipo}'); 
+                                        event.dataTransfer.setData('sourceDocId','${doc.id}'); 
+                                        event.dataTransfer.setData('itemIndex','${i}');">
+                        <div style="flex-grow:1; overflow:hidden;">
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                <span class="tag-badge bg-${item.tipo}">${item.tipo === 'FULL' ? 'T+P' : 'SOLO P'}</span>
+                                <strong>${item.nombre}</strong>
+                            </div>
+                            <span class="item-details">
+                                ${item.tipo === 'FULL' ? `H: T:${htVal} | P:${hpVal}` : `H: P:${hpVal}`}
+                            </span>
+                        </div>
+                        <button class="btn-del-course" onclick="event.stopPropagation(); eliminarCursoDeDocente(${doc.id}, ${i});">✕</button>
+                    </div>
+                `}).join("")}
+            </div>
+        `;
+        }
+
+        function renderDocentes() {
+            const grid = document.getElementById('gridDocentes');
+            if (!grid) return;
+
+            if (!Array.isArray(docentes)) return;
+
+            // Si el grid está vacío, render inicial completo
+            if (grid.children.length === 0) {
+                const fragment = document.createDocumentFragment();
+                docentes.forEach(doc => {
+                    const container = document.createElement('div');
+                    container.className = 'docente-container';
+                    container.id = `doc-card-${doc.id}`;
+                    container.ondragover = e => e.preventDefault();
+                    container.ondrop = e => {
+                        e.preventDefault();
+                        procesarEntrega(doc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo"), e.dataTransfer.getData("sourceDocId"), e.dataTransfer.getData("itemIndex"));
+                    };
+                    container.innerHTML = getDocenteCardHTML(doc);
+                    fragment.appendChild(container);
+                });
+                grid.appendChild(fragment);
+                return;
+            }
+
+            // Si ya hay elementos, sincronización (aunque para este caso simple,
+            // la actualización localizada maneja los cambios puntuales,
+            // renderDocentes se usa para recargas completas o cambios masivos).
+            // Por simplicidad en load/import, hacemos un rebuild aquí.
+            // Para optimizar más, podríamos hacer diffing, pero nos enfocamos en delete/update
+            grid.innerHTML = "";
+            const fragment = document.createDocumentFragment();
+            docentes.forEach(doc => {
+                const container = document.createElement('div');
+                container.className = 'docente-container';
+                container.id = `doc-card-${doc.id}`;
+                container.ondragover = e => e.preventDefault();
+                container.ondrop = e => {
+                    e.preventDefault();
+                    procesarEntrega(doc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo"), e.dataTransfer.getData("sourceDocId"), e.dataTransfer.getData("itemIndex"));
+                };
+                container.innerHTML = getDocenteCardHTML(doc);
+                fragment.appendChild(container);
+            });
+            grid.appendChild(fragment);
+        }
+
+        function updateDocenteCard(docId) {
+            const doc = docentes.find(d => d.id == docId);
+            if (!doc) return;
+
+            const card = document.getElementById(`doc-card-${docId}`);
+            if (card) {
+                card.innerHTML = getDocenteCardHTML(doc);
+            } else {
+                renderDocentes(); // Fallback
+            }
+        }
+
+        function editarDocente(docId) {
+            const doc = docentes.find(d => d.id == docId);
+            if (!doc) return;
+            const nuevoNombre = prompt("Editar nombre:", doc.nombre);
+            if (nuevoNombre) {
+                doc.nombre = nuevoNombre.toUpperCase().trim();
+                updateDocenteCard(docId);
+                scheduleSave();
+            }
+        }
+
+        function eliminarDocente(docId) {
+            if (confirm("¿Seguro que desea eliminar a este docente y toda su carga?")) {
+                const docName = docentes.find(d => d.id == docId).nombre;
+                cleanScheduleForDocente(docName, null); // Limpiar todo del docente
+
+                docentes = docentes.filter(d => d.id != docId);
+                const card = document.getElementById(`doc-card-${docId}`);
+                if (card) card.remove();
+                renderCursosDebounced();
+                scheduleSave();
+            }
+        }
+
+        function eliminarCursoDeDocente(docId, index) {
+            const doc = docentes.find(d => d.id == docId);
+            if (doc && doc.carga) {
+                const courseCode = doc.carga[index].codigo;
+                cleanScheduleForDocente(doc.nombre, courseCode); // Limpiar solo este curso
+
+                doc.carga.splice(index, 1);
+                updateDocenteCard(docId);
+                renderCursosDebounced();
+                scheduleSave();
+            }
+        }
+
+        function agregarDocente() {
+            const input = document.getElementById('nombreDocente');
+            const nom = input.value.trim();
+            if (!nom) return showToast("Ingrese un nombre válido.", "error");
+
+            const newDoc = { id: Date.now() + Math.random(), nombre: nom.toUpperCase(), carga: [] };
+            docentes.push(newDoc);
+            input.value = "";
+
+            const grid = document.getElementById('gridDocentes');
             const container = document.createElement('div');
             container.className = 'docente-container';
+            container.id = `doc-card-${newDoc.id}`;
             container.ondragover = e => e.preventDefault();
-            container.ondrop = e => { 
-                e.preventDefault(); 
-                procesarEntrega(doc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo"), e.dataTransfer.getData("sourceDocId"), e.dataTransfer.getData("itemIndex"));
+            container.ondrop = e => {
+                e.preventDefault();
+                procesarEntrega(newDoc.id, e.dataTransfer.getData("courseCode"), e.dataTransfer.getData("modo"), e.dataTransfer.getData("sourceDocId"), e.dataTransfer.getData("itemIndex"));
             };
-            container.innerHTML = `
-                <div class="docente-header">
-                    <div class="docente-info-main">
-                        <button class="btn-docente-ctrl" onclick="editarDocente(${doc.id})">✏️</button>
-                        <button class="btn-docente-ctrl" onclick="eliminarDocente(${doc.id})">🗑️</button>
-                        <strong>👤 ${doc.nombre}</strong>
-                    </div>
-                    <div class="total-hrs-badge">${doc.carga.reduce((a,b)=>a+b.horas,0)}h</div>
-                </div>
-                <div class="assigned-list">
-                    ${doc.carga.map((item, i) => {
-                        let htVal = item.ht;
-                        let hpVal = item.hp;
-                        if (htVal === undefined || hpVal === undefined) {
-                            const cRef = mallaRaw.find(m => m["CÓD.ASIG."] === item.codigo);
-                            if (cRef) { htVal = cRef["HT"] || 0; hpVal = cRef["HP"] || 0; }
+            container.innerHTML = getDocenteCardHTML(newDoc);
+            grid.prepend(container);
+
+            scheduleSave();
+            showToast("Docente añadido.", "success");
+        }
+
+        function limpiarSoloCargas() {
+            if (confirm("¿ESTÁ SEGURO? Esto eliminará todos los cursos asignados a TODOS los docentes.")) {
+                docentes.forEach(d => d.carga = []);
+                renderDocentes();
+                renderCursos();
+                scheduleSave();
+                showToast("Se han limpiado todas las cargas.", "success");
+            }
+        }
+
+        async function guardarEnBD() {
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const docRef = db.collection("planificacion").doc("lista_docentes");
+                    const sfDoc = await transaction.get(docRef);
+                    transaction.set(docRef, { docentes: docentes, ultimaActualizacion: new Date() });
+                });
+            } catch (error) {
+                console.error("Transacción fallida: ", error);
+                showToast("Error al guardar cambios en servidor.", "error");
+            }
+        }
+
+        async function cleanScheduleForDocente(docName, courseCode = null) {
+            try {
+                const horRef = db.collection("planificacion").doc("horarios");
+                const docSnap = await horRef.get();
+                if (!docSnap.exists) return;
+
+                let horarios = docSnap.data().horariosGeneral || {};
+                let changed = false;
+
+                Object.keys(horarios).forEach(ciclo => {
+                    Object.keys(horarios[ciclo]).forEach(blockKey => {
+                        // Filtrar bloques que NO sean del docente/curso a eliminar
+                        const originalLen = horarios[ciclo][blockKey].length;
+                        horarios[ciclo][blockKey] = horarios[ciclo][blockKey].filter(item => {
+                            const matchDoc = item.docente === docName;
+                            const matchCourse = courseCode ? item.codigo === courseCode : true;
+                            // Si coincide docente Y curso (o todo si curso es null), SE BORRA (return false)
+                            return !(matchDoc && matchCourse);
+                        });
+
+                        if (horarios[ciclo][blockKey].length !== originalLen) changed = true;
+                    });
+                });
+
+                if (changed) {
+                    await horRef.update({ horariosGeneral: horarios, ultimaActualizacion: new Date() });
+                    console.log(`🧹 Limpieza completada para ${docName} ${courseCode ? '(' + courseCode + ')' : '(Todo)'}`);
+                    showToast("Horario actualizado automáticamente.", "info");
+                }
+            } catch (e) {
+                console.error("Error limpiando horario:", e);
+            }
+        }
+
+        function abrirModalExcel() {
+            document.getElementById('modalConfigExcel').style.display = 'flex';
+            checkCloudTemplate(); // Verificar si existe plantilla
+
+            const savedConfig = JSON.parse(localStorage.getItem("config_excel_vertical") || "{}");
+
+            // Cargar valores guardados
+            if (savedConfig.blockStartRow) document.getElementById('blockStartRow').value = savedConfig.blockStartRow;
+            if (savedConfig.blockEndRow) document.getElementById('blockEndRow').value = savedConfig.blockEndRow;
+            if (savedConfig.cellDocenteBlock) document.getElementById('cellDocenteBlock').value = savedConfig.cellDocenteBlock;
+            if (savedConfig.rowCursosBlock) document.getElementById('rowCursosBlock').value = savedConfig.rowCursosBlock;
+
+            ['colN', 'colCodigo', 'colCurso', 'colHT', 'colHP', 'colTH', 'colCred', 'colGrupo', 'colEscuela'].forEach(id => {
+                if (savedConfig[id]) document.getElementById(id).value = savedConfig[id];
+            });
+
+            // Resetear estado de edición (siempre bloqueado al abrir)
+            document.getElementById('fieldSetPatron').disabled = true;
+            document.getElementById('fieldSetColumnas').disabled = true;
+            const btn = document.getElementById('btnEditConfig');
+            btn.innerHTML = "🔓 Editar Configuración";
+            btn.style.background = "#f39c12";
+        }
+
+        function toggleEditConfig() {
+            const fs1 = document.getElementById('fieldSetPatron');
+            const fs2 = document.getElementById('fieldSetColumnas');
+            const btn = document.getElementById('btnEditConfig');
+
+            const isDisabled = fs1.disabled; // Estado actual
+
+            if (isDisabled) {
+                // Habilitar
+                fs1.disabled = false;
+                fs2.disabled = false;
+                fs2.disabled = false;
+                btn.innerHTML = "<i class='fa-solid fa-lock'></i> Bloquear Configuración";
+                btn.style.background = "#7f8c8d"; // Gris para indicar 'cancelar/bloquear'
+            } else {
+                // Deshabilitar
+                fs1.disabled = true;
+                fs2.disabled = true;
+                btn.innerHTML = "<i class='fa-solid fa-lock-open'></i> Editar Configuración";
+                btn.style.background = "#f39c12";
+            }
+        }
+
+        function setModoArrastre(modo) {
+            const input = document.getElementById('modoArrastre');
+            if (input) input.value = modo;
+
+            // Visual feedback
+            document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('btnMode' + modo);
+            if (btn) btn.classList.add('active');
+        }
+
+        // --- GESTIÓN DE PLANTILLA (NUBE + PERSIANAS) ---
+        let urlPlantilla = null;
+
+        // 1. Verificar si existe plantilla guardada al cargar modal
+        async function checkCloudTemplate() {
+            const statusEl = document.getElementById('statusPlantilla');
+            const btnDown = document.getElementById('btnDescargarPlantilla');
+
+            statusEl.textContent = "Buscando...";
+            statusEl.style.color = "blue";
+            btnDown.style.display = "none";
+
+            try {
+                // Primero buscamos en config_excel_template (Donde guardaremos la URL o Base64)
+                const doc = await db.collection("planificacion").doc("config_excel_template").get();
+
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.url) {
+                        urlPlantilla = data.url;
+                        statusEl.textContent = "✅ Plantilla en Nube";
+                        statusEl.style.color = "var(--green)";
+                        btnDown.style.display = "inline-block";
+                    } else if (data.base64) {
+                        // Es un backup en Base64
+                        urlPlantilla = "BASE64";
+                        // Guardamos en memoria temporalmente si queremos, o lo leemos al descargar
+                        statusEl.textContent = "✅ Plantilla Local (Backup)";
+                        statusEl.style.color = "var(--green)";
+                        btnDown.style.display = "inline-block";
+                    } else {
+                        statusEl.textContent = "❌ Sin plantilla";
+                        statusEl.style.color = "red";
+                    }
+                } else {
+                    statusEl.textContent = "❌ Sin plantilla";
+                    statusEl.style.color = "red";
+                }
+            } catch (e) {
+                console.error(e);
+                statusEl.textContent = "⚠️ Error verificación";
+            }
+        }
+
+        // 2. Subir Plantilla (Listener)
+        document.getElementById('plantillaFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('statusPlantilla');
+            statusEl.textContent = "⏳ Procesando...";
+
+            // Lógica de subida (Híbrida: Storage > Base64)
+            if (file.size < 800000) {
+                // Opción A: Base64 directo (Más rápido y sin CORS)
+                statusEl.textContent = "💾 Guardando (Backup)...";
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    try {
+                        await db.collection("planificacion").doc("config_excel_template").set({
+                            base64: reader.result,
+                            nombre: file.name,
+                            updated: new Date()
+                        });
+                        urlPlantilla = "BASE64";
+                        statusEl.textContent = "✅ Guardado (Local)";
+                        statusEl.style.color = "var(--green)";
+                        document.getElementById('btnDescargarPlantilla').style.display = 'inline-block';
+                        showToast("Plantilla actualizada correctamente.", "success");
+                    } catch (err) {
+                        console.error(err);
+                        statusEl.textContent = "❌ Error Guardado";
+                        alert("Error al guardar plantilla: " + err.message);
+                    }
+                };
+            } else {
+                // Opción B: Storage (Archivos grandes)
+                statusEl.textContent = "☁️ Subiendo a Nube...";
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
+                const upload = async () => {
+                    const ref = storage.ref().child(`templates/plantilla_carga_${Date.now()}.xlsx`);
+                    await ref.put(file);
+                    return await ref.getDownloadURL();
+                };
+
+                try {
+                    const url = await Promise.race([upload(), timeout]);
+                    if (url) {
+                        await db.collection("planificacion").doc("config_excel_template").set({
+                            url: url,
+                            nombre: file.name,
+                            updated: new Date()
+                        });
+                        urlPlantilla = url;
+                        statusEl.textContent = "✅ Subido a Nube";
+                        statusEl.style.color = "var(--green)";
+                        document.getElementById('btnDescargarPlantilla').style.display = 'inline-block';
+                        showToast("Plantilla subida a la nube.", "success");
+                    }
+                } catch (err) {
+                    statusEl.textContent = "❌ Error Subida";
+                    alert("No se pudo subir a la nube (Timeout/Permisos) y es muy grande para backup local.");
+                }
+            }
+        });
+
+        // 3. Descargar Plantilla
+        async function descargarPlantilla() {
+            if (!urlPlantilla) return alert("No hay plantilla disponible.");
+
+            if (urlPlantilla === "BASE64") {
+                try {
+                    const doc = await db.collection("planificacion").doc("config_excel_template").get();
+                    if (doc.exists && doc.data().base64) {
+                        const link = document.createElement("a");
+                        link.href = doc.data().base64;
+                        link.download = doc.data().nombre || "Plantilla_Carga.xlsx";
+                        link.click();
+                    } else {
+                        alert("Error recuperando archivo local.");
+                    }
+                } catch (e) { alert("Error al descargar: " + e.message); }
+            } else {
+                window.open(urlPlantilla, '_blank');
+            }
+        }
+
+        async function generarReporteConPlantilla() {
+            let arrayBuffer = null;
+
+            // 0. Obtener el archivo (DE NUESTRA CONFIG)
+            showToast("Obteniendo plantilla...", "info");
+
+            try {
+                // Recuperar fresco DE LA BD por si acaso
+                const doc = await db.collection("planificacion").doc("config_excel_template").get();
+                if (!doc.exists) throw new Error("No hay plantilla configurada. Sube una primero.");
+
+                const data = doc.data();
+
+                if (data.base64) {
+                    // Convertir Base64 -> ArrayBuffer
+                    const fetchRes = await fetch(data.base64);
+                    arrayBuffer = await fetchRes.arrayBuffer();
+                } else if (data.url) {
+                    // Fetch URL
+                    const response = await fetch(data.url);
+                    if (!response.ok) throw new Error("No se pudo descargar de la nube (CORS/Red).");
+                    arrayBuffer = await response.arrayBuffer();
+                } else {
+                    throw new Error("Configuración de plantilla corrupta.");
+                }
+
+                showToast("Plantilla cargada. Procesando...", "success");
+
+            } catch (e) {
+                console.error(e);
+                return alert("❌ ERROR:\n" + e.message);
+            }
+
+
+
+            // 1. Docentes
+            const nombreFiltro = document.getElementById('nombreDocente').value.trim().toUpperCase();
+            let docentesAExportar = docentes;
+            if (nombreFiltro) docentesAExportar = docentes.filter(d => d.nombre.includes(nombreFiltro));
+            if (docentesAExportar.length === 0) return showToast("No hay docentes.", "error");
+
+            // 2. Configuración con VALIDACION
+            const getVal = (id) => document.getElementById(id).value.toUpperCase().trim();
+            const getInt = (id) => parseInt(document.getElementById(id).value) || 0;
+
+            const config = {
+                blockStartRow: getInt('blockStartRow'),
+                blockEndRow: getInt('blockEndRow'),
+                cellDocenteBlock: getVal('cellDocenteBlock'),
+                rowCursosBlock: getInt('rowCursosBlock'),
+
+                colN: getVal('colN'),
+                colCodigo: getVal('colCodigo'),
+                colCurso: getVal('colCurso'),
+                colHT: getVal('colHT'),
+                colHP: getVal('colHP'),
+                colTH: getVal('colTH'),
+                colCred: getVal('colCred'),
+                colGrupo: getVal('colGrupo'),
+                colEscuela: getVal('colEscuela')
+            };
+
+            // Validaciones Básicas
+            if (config.blockStartRow <= 0 || config.blockEndRow <= 0) return alert("Error: Las filas de inicio/fin del bloque deben ser números mayores a 0.");
+            if (config.blockEndRow < config.blockStartRow) return alert("Error: La fila final del bloque debe ser mayor a la inicial.");
+            if (!config.colCurso) return alert("Error: Debes indicar al menos la columna del Nombre del Curso.");
+
+            localStorage.setItem("config_excel_vertical", JSON.stringify(config));
+
+            const BLOCK_HEIGHT = config.blockEndRow - config.blockStartRow + 1;
+            const ROWS_PER_BLOCK_SPACE = BLOCK_HEIGHT; // Sin separación extra, pegaditos si el usuario define bien el bloque con espacio
+
+            showToast(`Generando reporte para ${docentesAExportar.length} docentes...`, "info");
+
+            try {
+                // Modificado: fromDataAsync acepta Blob, File, ArrayBuffer...
+                const workbook = await XlsxPopulate.fromDataAsync(arrayBuffer);
+                const sheet = workbook.sheet(0);
+
+                // Helper para setear valor seguro sin crashear
+                const safeSet = (col, row, val) => {
+                    if (!col) return; // Si no configuró columna, ignorar
+                    try {
+                        sheet.cell(`${col}${row}`).value(val);
+                    } catch (e) {
+                        console.warn(`Error escribiendo en ${col}${row}:`, e);
+                    }
+                };
+
+                // Helper copia celda seguro
+                const safeCopy = (srcRow, srcCol, tgtRow, tgtCol) => {
+                    try {
+                        const cellSrc = sheet.row(srcRow).cell(srcCol);
+                        const cellTgt = sheet.row(tgtRow).cell(tgtCol);
+                        cellTgt.value(cellSrc.value());
+                        cellTgt.style(cellSrc.style());
+                    } catch (e) { }
+                };
+
+                // FASE 1: CLONAR ESTRUCTURA (Antes de ensuciar el bloque original)
+                // Copiamos el Bloque 0 (limpio) a las posiciones 1, 2, 3...
+                for (let i = 1; i < docentesAExportar.length; i++) {
+                    const rowOffset = i * ROWS_PER_BLOCK_SPACE;
+                    const currentBlockStart = config.blockStartRow + rowOffset;
+
+                    // Clonar fila por fila
+                    for (let r = 0; r < BLOCK_HEIGHT; r++) {
+                        const sourceR = config.blockStartRow + r;
+                        const targetR = currentBlockStart + r;
+                        // Copiar rango ancho (cols 1 a 20)
+                        for (let c = 1; c <= 20; c++) {
+                            safeCopy(sourceR, c, targetR, c);
+                        }
+                    }
+                }
+
+                // FASE 2: LLENAR DATOS (Ahora que todo está clonado y limpio)
+                for (let i = 0; i < docentesAExportar.length; i++) {
+                    const doc = docentesAExportar[i];
+                    const rowOffset = i * ROWS_PER_BLOCK_SPACE;
+                    const currentBlockStart = config.blockStartRow + rowOffset;
+
+                    // DATOS DOCENTE
+                    if (config.cellDocenteBlock) {
+                        const match = config.cellDocenteBlock.match(/^([A-Z]+)([0-9]+)$/);
+                        if (match) {
+                            const colRef = match[1];
+                            const rowRef = parseInt(match[2]);
+                            const relRow = rowRef - config.blockStartRow;
+
+                            if (relRow >= 0) {
+                                safeSet(colRef, currentBlockStart + relRow, doc.nombre);
+                            }
+                        }
+                    }
+
+                    // DATOS CURSOS
+                    const cursosRelativeIndex = config.rowCursosBlock - config.blockStartRow;
+                    let cursosRowStart = currentBlockStart + cursosRelativeIndex;
+                    let numeracion = 1;
+
+                    // Limpiar filas de cursos antes de escribir (por si el template traía basura)
+                    // Calculamos cuántas filas de cursos caben en el bloque aproximadamente
+                    const maxRowsForCursos = config.blockEndRow - config.rowCursosBlock + 1;
+
+                    if (doc.carga && doc.carga.length > 0) {
+                        doc.carga.forEach((item, idx) => {
+                            const currentRow = cursosRowStart + idx;
+
+                            const cRef = mallaRaw.find(m => m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()) || {};
+                            let ht = 0, hp = 0, cred = 0;
+                            if (item.tipo === 'FULL') { ht = parseInt(cRef["HT"] || 0); hp = parseInt(cRef["HP"] || 0); }
+                            else { hp = parseInt(cRef["HP"] || 0); }
+
+                            // ----------------- DEBUGGING INICIO -----------------
+                            // Solo mostramos alerta para el PRIMER curso del PRIMER docente para no spammear
+                            if (i === 0 && idx === 0) {
+                                console.log("Buscando curso:", item.codigo);
+                                console.log("Encontramos:", cRef);
+                                console.log("Keys disponibles:", Object.keys(cRef));
+                                if (!cRef || Object.keys(cRef).length === 0) {
+                                    alert(`⚠️ OJO: No encontré el curso ${item.codigo} en la malla. Revisa si los códigos coinciden EXACTAMENTE.`);
+                                } else {
+                                    const keyCredDebug = Object.keys(cRef).find(k => k.toUpperCase().includes("CRED") || k.toUpperCase().includes("CR"));
+                                    if (!keyCredDebug) {
+                                        alert(`⚠️ ENCONTRÉ EL CURSO PERO NO LOS CRÉDITOS.\n\nLas columnas que tiene tu malla son:\n${Object.keys(cRef).join(", ")}\n\n(Avisa al sistema cuál es la de créditos)`);
+                                    }
+                                }
+                            }
+                            // ----------------- DEBUGGING FIN -----------------
+
+                            // Búsqueda inteligente de Créditos (CREDITOS, CR, CRED, CREDITOS, CR., CREDITOS.)
+                            const keys = Object.keys(cRef);
+                            // Buscamos algo que empiece con CR, o contenga CREDIT
+                            const keyCred = keys.find(k => k.toUpperCase().includes("CRED") || k.toUpperCase().startsWith("CR")) || "CREDITOS";
+                            cred = cRef[keyCred] || "";
+
+                            // Si sigue vacío, intentamos buscar 'CR.' literal o 'C' si fuera el caso extremo
+                            if (!cred && cRef["CR."]) cred = cRef["CR."];
+                            if (!cred && cRef["C."]) cred = cRef["C."];
+
+                            let th = ht + hp;
+                            let grupo = item.tipo === 'FULL' ? 'A' : 'B';
+
+                            safeSet(config.colN, currentRow, numeracion++);
+                            safeSet(config.colCodigo, currentRow, item.codigo);
+                            safeSet(config.colCurso, currentRow, item.nombre);
+                            safeSet(config.colCred, currentRow, cred);
+                            safeSet(config.colHT, currentRow, ht || "-");
+                            safeSet(config.colHP, currentRow, hp || "-");
+                            safeSet(config.colTH, currentRow, th);
+                            safeSet(config.colGrupo, currentRow, grupo);
+                            safeSet(config.colEscuela, currentRow, "EPIS");
+                        });
+                    }
+
+                    // FASE 3: RESTAURAR/INSERTAR FÓRMULAS DE TOTALES
+                    // Asumimos que la fila de "TOTAL HORAS" está al final del bloque o justo debajo de los cursos.
+                    // Si el usuario definió blockEndRow como la fila de totales, usaremos esa.
+                    // Si no, trataremos de inferirla.
+
+                    // Estrategia: "TOTAL HORAS" suele estar en la última fila del bloque o +1.
+                    // Vamos a intentar poner la fórmula en la fila = CurrentBlockStart + (config.blockEndRow - config.blockStartRow)
+                    const rowTotal = currentBlockStart + (config.blockEndRow - config.blockStartRow);
+
+                    // Rango de suma: Desde rowCursosBlock hasta rowTotal - 1
+                    const rowInicioSuma = currentBlockStart + (config.rowCursosBlock - config.blockStartRow);
+                    const rowFinSuma = rowTotal - 1;
+
+                    if (rowFinSuma >= rowInicioSuma) {
+                        if (config.colHT) sheet.cell(`${config.colHT}${rowTotal}`).formula(`SUM(${config.colHT}${rowInicioSuma}:${config.colHT}${rowFinSuma})`);
+                        if (config.colHP) sheet.cell(`${config.colHP}${rowTotal}`).formula(`SUM(${config.colHP}${rowInicioSuma}:${config.colHP}${rowFinSuma})`);
+                        // Total General (HT + HP) o Suma de columna TH
+                        if (config.colTH) sheet.cell(`${config.colTH}${rowTotal}`).formula(`SUM(${config.colTH}${rowInicioSuma}:${config.colTH}${rowFinSuma})`);
+                    }
+
+                }
+
+                const blob = await workbook.outputAsync();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.href = url;
+                a.download = `Carga_Vertical_Completa.xlsx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.getElementById('modalConfigExcel').style.display = 'none';
+                showToast("¡Excel Vertical Generado!", "success");
+
+            } catch (err) {
+                console.error(err);
+                alert("Error al generar Excel (Verifica tus coordenadas):\n" + err.message);
+            }
+        }
+
+        // Función antigua simple (la reemplazamos o mantenemos ambas? El usuario quiere una plantilla).
+        // Mantenemos la simple como backup
+        function exportarReporteSimple() {
+            // 1. Filtrar Docente (Si hay filtro, solo ese. Si no, todos).
+            const nombreFiltro = document.getElementById('nombreDocente').value.trim().toUpperCase();
+            let docentesAExportar = docentes;
+
+            if (nombreFiltro) {
+                docentesAExportar = docentes.filter(d => d.nombre.includes(nombreFiltro));
+            }
+
+            if (docentesAExportar.length === 0) return showToast("No hay docentes para exportar.", "error");
+
+            // 2. Construir Data Estructurada
+            let data = [];
+
+            // Encabezados
+            data.push(["REPORTE DE CARGA ACADÉMICA 2026-I"]);
+            data.push(["Fecha:", new Date().toLocaleDateString()]);
+            data.push([""]); // Espacio
+            data.push(["N°", "DOCENTE", "CÓDIGO", "CURSO", "TIPO CARGA", "H. TEORÍA", "H. PRÁCTICA", "TOTAL HORAS"]);
+
+            let correlativo = 1;
+
+            docentesAExportar.forEach(doc => {
+                if (!doc.carga || doc.carga.length === 0) {
+                    // Docente sin carga
+                    data.push([correlativo++, doc.nombre, "-", "SIN CARGA ASIGNADA", "-", "0", "0", "0"]);
+                } else {
+                    doc.carga.forEach(item => {
+                        // Buscar horas en malla para desglose exacto
+                        const cRef = mallaRaw.find(m => m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()) || {};
+                        let ht = 0, hp = 0;
+
+                        if (item.tipo === 'FULL') {
+                            ht = parseInt(cRef["HT"] || 0);
+                            hp = parseInt(cRef["HP"] || 0);
+                        } else {
+                            // Si es solo practica
+                            hp = parseInt(cRef["HP"] || 0);
                         }
 
-                        return `
-                        <div class="assigned-item" draggable="true" 
-                             ondragstart="event.dataTransfer.setData('courseCode','${item.codigo}'); 
-                                         event.dataTransfer.setData('modo','${item.tipo}'); 
-                                         event.dataTransfer.setData('sourceDocId','${doc.id}'); 
-                                         event.dataTransfer.setData('itemIndex','${i}');">
-                            <div style="flex-grow:1; overflow:hidden;">
-                                <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                    <span class="tag-badge bg-${item.tipo}">${item.tipo==='FULL'?'T+P':'SOLO P'}</span>
-                                    <strong>${item.nombre}</strong>
-                                </div>
-                                <span class="item-details">
-                                    ${item.tipo === 'FULL' ? `H: T:${htVal} | P:${hpVal}` : `H: P:${hpVal}`}
-                                </span>
-                            </div>
-                            <button class="btn-del-course" onclick="event.stopPropagation(); docentes.find(d=>d.id==${doc.id}).carga.splice(${i},1); guardarYRender();">✕</button>
-                        </div>
-                    `}).join("")}
-                </div>
-            `;
-            grid.appendChild(container);
-        });
-    }
+                        data.push([
+                            correlativo++,
+                            doc.nombre,
+                            item.codigo,
+                            item.nombre,
+                            item.tipo === 'FULL' ? 'TEORÍA Y PRÁCTICA' : 'SOLO PRÁCTICA',
+                            ht,
+                            hp,
+                            (ht + hp)
+                        ]);
+                    });
+                }
+            });
 
-    function editarDocente(docId) {
-        const doc = docentes.find(d => d.id == docId);
-        const nuevoNombre = prompt("Editar nombre:", doc.nombre);
-        if (nuevoNombre) { doc.nombre = nuevoNombre.toUpperCase().trim(); guardarYRender(); }
-    }
+            // 3. Generar Hoja Excel
+            const ws = XLSX.utils.aoa_to_sheet(data);
 
-    function eliminarDocente(docId) {
-        if (confirm("¿Eliminar docente?")) { docentes = docentes.filter(d => d.id != docId); guardarYRender(); }
-    }
+            // Ajuste de anchos de columna (Cosmético)
+            const wscols = [
+                { wch: 5 },  // N
+                { wch: 40 }, // Docente
+                { wch: 10 }, // Codigo
+                { wch: 50 }, // Curso
+                { wch: 20 }, // Tipo
+                { wch: 10 }, // HT
+                { wch: 10 }, // HP
+                { wch: 10 }  // Total
+            ];
+            ws['!cols'] = wscols;
 
-    function agregarDocente() {
-        const nom = document.getElementById('nombreDocente').value.trim();
-        if(!nom) return;
-        docentes.push({ id: Date.now() + Math.random(), nombre: nom.toUpperCase(), carga: [] });
-        document.getElementById('nombreDocente').value = "";
-        guardarYRender();
-    }
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Carga Académica");
 
-    function limpiarSoloCargas() {
-        if(confirm("¿Vaciar cursos de todos?")) { docentes.forEach(d => d.carga = []); guardarYRender(); }
-    }
+            // 4. Descargar
+            XLSX.writeFile(wb, "Reporte_Carga_Docente.xlsx");
+        }
 
-    function guardarYRender() {
-        db.collection("planificacion").doc("lista_docentes").set({ docentes: docentes, ultimaActualizacion: new Date() });
-        renderCursos(); renderDocentes();
-    }
 
-    function abrirHorarios() { window.open('horarios.html', '_blank'); }
-</script>
+        // --- LIMPIEZA DE HORARIOS AL ELIMINAR CURSOS/DOCENTES ---
+        async function cleanScheduleForDocente(docName, courseCode = null) {
+            console.log(`Limpiando horarios para: ${docName}, curso: ${courseCode || "TODOS"}`);
+            const horarioRef = db.collection("planificacion").doc("horarios");
+
+            try {
+                const docSnap = await horarioRef.get();
+                if (!docSnap.exists) return;
+
+                let horarios = docSnap.data().horariosGeneral || {};
+                let changed = false;
+
+                // Iterate over all cycles
+                Object.keys(horarios).forEach(ciclo => {
+                    const cicloData = horarios[ciclo];
+                    Object.keys(cicloData).forEach(key => {
+                        const bloques = cicloData[key];
+                        // Filter out blocks that match
+                        const newBloques = bloques.filter(b => {
+                            const isDocente = b.docente === docName;
+                            if (!isDocente) return true; // Keep it
+
+                            // If courseCode is provided, only remove if code matches
+                            if (courseCode) {
+                                return b.codigo.toString().trim() !== courseCode.toString().trim();
+                            }
+
+                            // If no courseCode, remove all for this docente
+                            return false;
+                        });
+
+                        if (newBloques.length !== bloques.length) {
+                            horarios[ciclo][key] = newBloques;
+                            changed = true;
+                        }
+                    });
+                });
+
+                if (changed) {
+                    await horarioRef.update({
+                        horariosGeneral: horarios,
+                        ultimaActualizacion: new Date()
+                    });
+                    console.log("Horarios actualizados (limpieza exitosa).");
+                }
+
+            } catch (err) {
+                console.error("Error cleaning schedule:", err);
+                showToast("Error al sincronizar con horarios.", "error");
+            }
+        }
+
+        function abrirHorarios() { window.open('horarios.html', '_blank'); }
+    </script>
 </body>
+
 </html>

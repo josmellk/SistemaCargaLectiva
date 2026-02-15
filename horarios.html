@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <script>
@@ -18,12 +19,15 @@
     <title>Horario Académico - Gestión de Docentes</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Estilo para la opción activa */
         nav a.active {
-            background-color: rgba(255, 255, 255, 0.2); 
-            border-bottom: 3px solid white; 
-            padding-bottom: 9px; 
+            background-color: rgba(255, 255, 255, 0.2);
+            border-bottom: 3px solid white;
+            padding-bottom: 9px;
             opacity: 1;
         }
 
@@ -34,389 +38,2001 @@
             transition: all 0.3s ease;
             display: inline-block;
         }
-        :root { --blue: #1a3a5a; --bg: #f8f9fa; --border: #cbd5e0; --red: #e53e3e; --save: #2d3748; --green: #27ae60; --light-blue: #3182ce; --warning: #f39c12; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        nav { background: var(--blue); padding: 12px; text-align: center; z-index: 400; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        nav a, nav span { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; font-size: 13px; transition: opacity 0.2s; cursor: pointer; }
-        nav a:hover, nav span:hover { opacity: 0.8; }
-        .layout-container { display: flex; flex-grow: 1; overflow: hidden; width: 100vw; }
 
-        .sidebar { width: 380px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100%; z-index: 300; }
-        .sidebar-header { padding: 10px; background: var(--blue); color: white; text-align: center; }
-        .prelacion-nav { background: #edf2f7; padding: 10px; border-bottom: 2px solid #cbd5e0; text-align: center; }
-        
-        .docente-selector-container { margin-bottom: 8px; }
-        #selectDirectoDocente { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid var(--blue); font-size: 12px; font-weight: bold; cursor: pointer; }
+        :root {
+            --blue: #1a3a5a;
+            --bg: #f8f9fa;
+            --border: #cbd5e0;
+            --red: #e53e3e;
+            --save: #2d3748;
+            --green: #27ae60;
+            --light-blue: #3182ce;
+            --warning: #f39c12;
+        }
 
-        .docente-actual { font-size: 13px; font-weight: 800; color: var(--red); display: block; margin-bottom: 5px; text-transform: uppercase; }
-        .btn-nav { padding: 5px 12px; cursor: pointer; background: var(--blue); color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .assigned-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
-        .drag-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: grab; font-size: 11px; border-left: 8px solid #4a5568; }
-        
-        .save-container { padding: 12px; background: #f1f5f9; border-top: 1px solid #ddd; text-align: center; display: flex; flex-direction: column; gap: 6px; }
-        .btn-save-main { background: var(--green); color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 900; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        .clear-btns-row { display: flex; gap: 5px; width: 100%; }
-        .btn-clear-small { flex: 1; color: white; padding: 6px 2px; border: none; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .btn-warning-small { background: var(--warning); }
-        .btn-danger-small { background: var(--red); }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-        .unsaved-warning { display: none; color: var(--red); font-size: 10px; font-weight: bold; margin-bottom: 5px; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .header-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: white;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #ddd;
+        }
 
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; overflow-y: auto; scroll-behavior: smooth; }
-        .schedule-container { padding: 0 20px 20px 20px; flex-grow: 1; display: flex; flex-direction: column; }
-        .schedule-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; border: 2px solid #000; }
-        .schedule-table th { background: var(--blue); color: white; padding: 8px; border: 1px solid #000; font-size: 13px; }
-        .schedule-table td { border: 1px solid #000; height: calc((100vh - 200px) / 6.5); text-align: center; position: relative; padding: 0; }
-        
-        .hour-cell { background: #edf2f7; font-weight: 900; width: 100px; font-size: 12px; color: #000; }
-        .diagonal-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
-        .dropped-course { flex: 1; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; justify-content: center; align-items: center; text-align: center; line-height: 1.1; border-bottom: 1px dashed rgba(0,0,0,0.1); position: relative; color: #000; font-weight: bold; }
-        .dropped-course strong { font-size: 9px; font-weight: 900; color: #000; text-transform: uppercase; }
-        .docente-name-cell { font-size: 8px; font-weight: 800; color: #333; margin-top: 1px; }
-        .tag-tipo { font-size: 8px; font-weight: bold; color: white; padding: 1px 3px; border-radius: 3px; display: inline-block; }
-        .tag-ht { background: #ed8936; }
-        .tag-hp { background: #9f7aea; }
-        .btn-remove { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 14px; height: 14px; cursor: pointer; font-size: 9px; z-index: 10; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        
-        .print-actions { position: absolute; top: 10px; right: 25px; display: flex; gap: 10px; z-index: 500; }
-        .btn-print-action { padding: 8px 12px; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; }
-        
-        .ciclo-pagination { background: white; padding: 10px; border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; gap: 30px; position: sticky; bottom: 0; z-index: 300; }
-        .btn-ciclo-nav { background: var(--blue); color: white; border: none; padding: 8px 25px; border-radius: 15px; cursor: pointer; font-weight: bold; font-size: 18px; }
+        nav {
+            background: var(--blue);
+            padding: 12px;
+            text-align: center;
+            z-index: 400;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
 
-        #print-section { display: none; }
+        nav a,
+        nav span {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+
+        nav a:hover,
+        nav span:hover {
+            opacity: 0.8;
+        }
+
+        .layout-container {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 300;
+        }
+
+        .sidebar-header {
+            padding: 10px;
+            background: var(--blue);
+            color: white;
+            text-align: center;
+        }
+
+        .prelacion-nav {
+            background: #edf2f7;
+            padding: 10px;
+            border-bottom: 2px solid #cbd5e0;
+            text-align: center;
+        }
+
+        .docente-selector-container {
+            margin-bottom: 8px;
+        }
+
+        #selectDirectoDocente {
+            width: 100%;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid var(--blue);
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .docente-actual {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--red);
+            display: block;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .btn-nav {
+            padding: 8px 15px;
+            cursor: pointer;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .assigned-list {
+            overflow-y: auto;
+            padding: 10px;
+            flex-grow: 1;
+        }
+
+        .drag-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: grab;
+            font-size: 11px;
+            border-left: 8px solid #4a5568;
+        }
+
+        .save-container {
+            padding: 12px;
+            background: #f1f5f9;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-save-main {
+            background: var(--green);
+            color: white;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-save-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .clear-btns-row {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .btn-clear-small {
+            flex: 1;
+            color: white;
+            padding: 8px 5px;
+            border: none;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-clear-small:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .btn-warning-small {
+            background: var(--warning);
+        }
+
+        .btn-danger-small {
+            background: var(--red);
+        }
+
+        .unsaved-warning {
+            display: none;
+            color: var(--red);
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .schedule-container {
+            padding: 0 20px 20px 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            table-layout: fixed;
+            border: 2px solid #000;
+        }
+
+        .schedule-table th {
+            background: var(--blue);
+            color: white;
+            padding: 8px;
+            border: 1px solid #000;
+            font-size: 13px;
+        }
+
+        .schedule-table td {
+            border: 1px solid #000;
+            /* height: calc((100vh - 200px) / 6.5); REMOVED to let div control it */
+            text-align: center;
+            position: relative;
+            padding: 0;
+            overflow: hidden;
+            /* Added to prevent expansion */
+        }
+
+        .hour-cell {
+            background: #edf2f7;
+            font-weight: 900;
+            width: 100px;
+            font-size: 12px;
+            color: #000;
+        }
+
+        .diagonal-container {
+            width: 100%;
+            height: calc((100vh - 200px) / 6.5);
+            /* Fixed height applied here */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Ensure content inside doesn't expand parent */
+        }
+
+        .dropped-course {
+            flex: 1;
+            /* Grow to fill space found */
+            display: flex;
+            flex-direction: column;
+            padding: 2px;
+            /* Reduced padding */
+            box-sizing: border-box;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            line-height: 1;
+            /* Tighter lines */
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+            position: relative;
+            color: #000;
+            font-weight: bold;
+            min-height: 0;
+            /* Critical for flex shrinking */
+            overflow: hidden;
+            /* Hide overflow content if it gets too small */
+        }
+
+        /* CSS UPDATES */
+        .dropped-course strong {
+            font-size: 11px;
+            /* Increased from 9px */
+            font-weight: 900;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .docente-name-cell {
+            font-size: 10px;
+            /* Increased from 8px */
+            font-weight: 800;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        /* RESTORED STYLES FOR DRAG & DROP ELEMENTS */
+        .btn-remove {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            color: var(--red);
+            font-weight: 900;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0 3px;
+            line-height: 1;
+            z-index: 10;
+            border-radius: 50%;
+        }
+
+        .btn-remove:hover {
+            color: darkred;
+            transform: scale(1.1);
+            background: white;
+        }
+
+        .tag-tipo {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .tag-ht {
+            background-color: #ed8936;
+            /* Orange */
+        }
+
+        .tag-hp {
+            background-color: #9f7aea;
+            /* Purple */
+        }
+
+        /* DYNAMIC TEXT SIZING */
+        .dropped-course.small-text {
+            padding: 1px;
+            line-height: 0.95;
+        }
+
+        .dropped-course.small-text strong {
+            font-size: 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .dropped-course.small-text .docente-name-cell {
+            font-size: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .dropped-course.small-text .tag-tipo {
+            font-size: 8px;
+            padding: 0 2px;
+            margin-top: 1px;
+        }
+
+        .dropped-course.small-text .btn-remove {
+            font-size: 10px;
+            padding: 0 2px;
+            top: 0;
+            right: 0;
+        }
+
+        /* LAYOUT FIXES */
+        .ciclo-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 10px;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            z-index: 100;
+            border-top: 1px solid #ccc;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-ciclo-nav {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ciclo-nav:hover {
+            transform: scale(1.1);
+            background: var(--light-blue);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-print-action {
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 5px;
+        }
+
+        .btn-print-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            opacity: 0.9;
+        }
+
+        .print-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
         @media print {
-            @page { size: A4 landscape; margin: 0; }
-            html, body { height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: white !important; }
-            body > *:not(#print-section) { display: none !important; }
-            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-            .page-break { page-break-after: always; width: 100% !important; height: 100vh !important; display: flex !important; flex-direction: column !important; padding: 0.5cm 1cm !important; box-sizing: border-box !important; }
-            .page-break:last-child { page-break-after: auto !important; }
-            .schedule-table { width: 100% !important; border: 2pt solid #000 !important; table-layout: fixed !important; border-collapse: collapse !important; }
-            .schedule-table td { height: 2.0cm !important; border: 1pt solid #000 !important; }
-            .schedule-table th { background-color: #f2f2f2 !important; border: 1pt solid #000 !important; color: black !important; padding: 5px; font-size: 11pt; }
-            .hour-cell { background-color: #f9f9f9 !important; width: 85px !important; font-size: 10pt; }
-            h1 { font-size: 18pt !important; margin: 0 !important; text-align: center; }
-            h2 { font-size: 14pt !important; margin: 5px 0 !important; text-align: center; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page {
+                size: landscape;
+                margin: 5mm;
+            }
+
+            body {
+                background: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            nav,
+            .layout-container,
+            .print-actions,
+            .btn-remove,
+            .ciclo-pagination,
+            .unsaved-warning,
+            #tituloHorario,
+            #labelTurno {
+                display: none !important;
+            }
+
+            #print-section {
+                display: block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                z-index: 9999;
+            }
+
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+                margin-bottom: 20px;
+            }
+
+            .schedule-table {
+                font-size: 10px;
+                border: 2px solid black;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                border: 1px solid black;
+                padding: 2px;
+                height: auto;
+            }
+
+            .schedule-table th {
+                background-color: #3182ce !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .dropped-course {
+                border: 1px solid #ccc;
+                margin: 1px;
+                padding: 2px;
+                break-inside: avoid;
+            }
+        }
+
+        /* RESPONSIVE STYLES FOR HORARIOS */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 60px;
+            /* Below header */
+            left: 10px;
+            z-index: 2000;
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 900;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .layout-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 80%;
+                max-width: 300px;
+                height: 100vh;
+                transition: left 0.3s ease;
+                box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .main-content {
+                width: 100%;
+                margin-top: 40px;
+                /* Space for toggle */
+            }
+
+            /* TABLE RESPONSIVENESS */
+            .schedule-container {
+                padding: 10px;
+                overflow-x: auto;
+            }
+
+            .schedule-table {
+                min-width: 800px;
+                /* Force scroll */
+            }
+
+            .ciclo-pagination {
+                gap: 10px;
+                padding: 5px;
+            }
+
+            .btn-ciclo-nav {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            /* Adjust header sticky */
+            .header-sticky {
+                position: static;
+                padding: 5px;
+            }
+
+            nav {
+                display: flex;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding: 5px;
+            }
+
+            nav a {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<nav id="mainNav">
-    <a href="horarios.html" class="active">Horarios</a>    
-    <a href="vista_docente.html">Horario Docente</a>
-    <a href="laboratorios.html">Asignar Laboratorios</a>
-    <a href="vista_laboratorios.html">Vista Ocupación</a>
-    <button onclick="cerrarSesion()" style="background:var(--red); color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer">❌ CERRAR SESIÓN</button>
-</nav>
+    <!-- RESPONSIVE TOGGLE -->
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<div class="layout-container">
-    <div class="sidebar">
-        <div class="sidebar-header"><h3>📅 Programación</h3></div>
-        <div class="prelacion-nav">
-            <div class="docente-selector-container">
-                <select id="selectDirectoDocente" onchange="irADocenteEspecifico(this.value)">
-                    <option value="">Seleccionar Docente...</option>
-                </select>
+    <div class="layout-container">
+        <div class="sidebar" id="sidebarHorarios">
+            <!-- Sidebar content remains same, just ID added for toggle -->
+            <div class="sidebar-header">
+                <h3><i class="fa-solid fa-calendar-days"></i> Programación</h3>
             </div>
-            <span class="docente-actual" id="nombreDocenteActual">Cargando...</span>
-            <div style="display: flex; justify-content: space-between; gap: 5px;">
-                <button class="btn-nav" onclick="cambiarDocente(-1)">« Ant.</button>
-                <button class="btn-nav" onclick="cambiarDocente(1)" style="flex-grow:1">Siguiente</button>
+            <div class="prelacion-nav">
+                <div class="docente-selector-container">
+                    <select id="selectDirectoDocente" onchange="irADocenteEspecifico(this.value)">
+                        <option value="">Seleccionar Docente...</option>
+                    </select>
+                </div>
+                <span class="docente-actual" id="nombreDocenteActual">Cargando...</span>
+                <div style="display: flex; justify-content: space-between; gap: 5px;">
+                    <button class="btn-nav" onclick="cambiarDocente(-1)">« Ant.</button>
+                    <button class="btn-nav" onclick="cambiarDocente(1)" style="flex-grow:1">Siguiente</button>
+                </div>
+            </div>
+            <div class="filter-group" style="padding: 10px;">
+                <select id="filtroCicloDocente" onchange="sincronizarYRender()"
+                    style="width:100%; padding:8px; border-radius:8px; border:2px solid var(--blue); font-weight:bold;"></select>
+            </div>
+            <div class="assigned-list" id="listaParaArrastrar"></div>
+            <div class="save-container">
+                <div class="clear-btns-row">
+                    <button class="btn-clear-small btn-warning-small" onclick="limpiarCicloActual()"><i
+                            class="fa-solid fa-eraser"></i> Limpiar
+                        Ciclo</button>
+                    <button class="btn-clear-small btn-danger-small" onclick="borrarTodoElHorarioGlobal()"><i
+                            class="fa-solid fa-calendar-xmark"></i> Borrar
+                        Todo</button>
+                </div>
+                <span id="statusGuardado"
+                    style="color:#666; font-style:italic; font-size:12px; margin-left:10px; font-weight:bold;"></span>
             </div>
         </div>
-        <div class="filter-group" style="padding: 10px;">
-            <select id="filtroCicloDocente" onchange="sincronizarYRender()" style="width:100%; padding:8px; border-radius:8px; border:2px solid var(--blue); font-weight:bold;"></select>
-        </div>
-        <div class="assigned-list" id="listaParaArrastrar"></div>
-        <div class="save-container">
-            <div id="txtWarning" class="unsaved-warning">⚠️ TIENES CAMBIOS SIN GUARDAR</div>
-            <div class="clear-btns-row">
-                <button class="btn-clear-small btn-warning-small" onclick="limpiarCicloActual()">🧹 Limpiar Ciclo</button>
-                <button class="btn-clear-small btn-danger-small" onclick="borrarTodoElHorarioGlobal()">💣 Borrar Todo</button>
+
+        <div class="main-content" id="scrollPrincipal">
+            <div class="header-sticky">
+                <h2 id="tituloHorario" style="margin:0;">HORARIO</h2>
+                <div id="labelTurno"
+                    style="padding:4px 20px; border-radius:15px; color:white; font-weight:bold; display:inline-block; font-size:12px; margin-top:5px;">
+                    TURNO</div>
+                <div class="print-actions">
+                    <button class="btn-print-action" style="background:var(--light-blue)"
+                        onclick="imprimirTodosLosCiclos()"><i class="fa-solid fa-print"></i> TODO</button>
+                    <button class="btn-print-action" style="background:var(--green)"
+                        onclick="imprimirSoloVistaActual()"><i class="fa-solid fa-print"></i> VISTA</button>
+                    <button class="btn-print-action" style="background:var(--warning)" onclick="abrirModalExportar()"><i
+                            class="fa-solid fa-file-excel"></i> EXPORTAR</button>
+                </div>
             </div>
-            <button id="btnGuardar" class="btn-save-main" onclick="guardarTodoPermanente()">💾 GUARDAR CAMBIOS</button>
+            <div class="schedule-container">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">HORA</th>
+                            <th>LUNES</th>
+                            <th>MARTES</th>
+                            <th>MIÉRCOLES</th>
+                            <th>JUEVES</th>
+                            <th>VIERNES</th>
+                            <th>SÁBADO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoHorario"></tbody>
+                </table>
+            </div>
+            <div class="ciclo-pagination">
+                <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)"><i
+                        class="fa-solid fa-chevron-left"></i></button>
+                <div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I
+                </div>
+                <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)"><i
+                        class="fa-solid fa-chevron-right"></i></button>
+            </div>
         </div>
     </div>
 
-    <div class="main-content" id="scrollPrincipal">
-        <div style="text-align:center; padding:10px; position: relative;">
-            <h2 id="tituloHorario" style="margin:0;">HORARIO</h2>
-            <div id="labelTurno" style="padding:4px 20px; border-radius:15px; color:white; font-weight:bold; display:inline-block; font-size:12px; margin-top:5px;">TURNO</div>
-            <div class="print-actions">
-                <button class="btn-print-action" style="background:var(--light-blue)" onclick="imprimirTodosLosCiclos()">🖨️ TODO</button>
-                <button class="btn-print-action" style="background:var(--green)" onclick="imprimirSoloVistaActual()">🖨️ VISTA</button>
-            </div>
-        </div>
-        <div class="schedule-container">
-            <table class="schedule-table">
-                <thead><tr><th style="width: 100px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIÉRCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SÁBADO</th></tr></thead>
-                <tbody id="cuerpoHorario"></tbody>
-            </table>
-        </div>
-        <div class="ciclo-pagination">
-            <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(-1)">❮</button>
-            <div style="font-weight: 900; font-size: 22px; color: var(--blue);" id="cicloActualDisplay">CICLO I</div>
-            <button class="btn-ciclo-nav" onclick="navegarCicloGeneral(1)">❯</button>
-        </div>
-    </div>
-</div>
+    <div id="print-section"></div>
 
-<div id="print-section"></div>
+    <script>
+        function resaltarMenuActivo() {
+            const paginaActual = window.location.pathname.split("/").pop();
+            const enlaces = document.querySelectorAll('nav a');
+            enlaces.forEach(enlace => {
+                if (enlace.getAttribute('href') === paginaActual) {
+                    enlace.classList.add('active');
+                } else {
+                    enlace.classList.remove('active');
+                }
+            });
+        }
 
-<script>
-    function resaltarMenuActivo() {
-        const paginaActual = window.location.pathname.split("/").pop();
-        const enlaces = document.querySelectorAll('nav a');
-        enlaces.forEach(enlace => {
-            if (enlace.getAttribute('href') === paginaActual) {
-                enlace.classList.add('active');
-            } else {
-                enlace.classList.remove('active');
+        window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
+
+        function cerrarSesion() {
+            localStorage.removeItem("accesoPermitido");
+            window.location.replace("login.html");
+        }
+
+        const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        let malla = [], docentes = [], horariosPorCiclo = {}, ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+        const hMañana = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00"], hTarde = ["14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
+        let indiceDocenteActual = 0, indiceCicloGeneral = 0, cambiosPendientes = false;
+        let saveTimeout;
+
+        function registrarCambio() {
+            cambiosPendientes = true;
+            autoGuardar();
+        }
+
+        function autoGuardar() {
+            const st = document.getElementById('statusGuardado');
+            if (st) {
+                st.innerText = "⏳ Guardando...";
+                st.style.color = "#f39c12"; // orange
+            }
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                guardarTodoPermanente(true);
+            }, 1000); // Guardar después de 1 segundo de inactividad
+        }
+
+        function limpiarCicloActual() {
+            const cic = ROMANOS[indiceCicloGeneral];
+            if (confirm(`¿Eliminar todos los cursos del CICLO ${cic}?`)) {
+                horariosPorCiclo[cic] = {};
+                recalcularCacheHoras(); // VITAL: Resetear conteo de horas para que reaparezcan en la lista
+                registrarCambio();
+                cargarHorarioCiclo();
+                renderCursosAsignados();
+            }
+        }
+
+        function borrarTodoElHorarioGlobal() {
+            if (confirm("⚠️ ADVERTENCIA: Se borrarán los horarios de TODOS los ciclos (I al X). ¿Deseas continuar?")) {
+                ROMANOS.forEach(cic => { horariosPorCiclo[cic] = {}; });
+                recalcularCacheHoras(); // VITAL: Resetear conteo de horas
+                registrarCambio();
+                cargarHorarioCiclo();
+                renderCursosAsignados();
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (e.target.tagName === 'A' && e.target.closest('#mainNav')) {
+                if (cambiosPendientes) {
+                    e.preventDefault();
+                    if (!confirm("⚠️ Tienes cambios sin guardar. ¿Deseas salir?")) return;
+                    cambiosPendientes = false; window.location.href = e.target.href;
+                }
             }
         });
-    }
 
-    window.addEventListener('DOMContentLoaded', resaltarMenuActivo);
-    
-    function cerrarSesion() {
-        localStorage.removeItem("accesoPermitido"); 
-        window.location.replace("login.html");
-    }
-
-    const firebaseConfig = { apiKey: "AIzaSyBNjlmtZJXtsmW7qKBUKVBZItG1jWilBEc", authDomain: "carga-docente.firebaseapp.com", projectId: "carga-docente", storageBucket: "carga-docente.firebasestorage.app", messagingSenderId: "994250556754", appId: "1:994250556754:web:ecabed4715e7803542e68b" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    let malla = [], docentes = [], horariosPorCiclo = {}, ROMANOS = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
-    const hMañana = ["07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00"], hTarde = ["14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"];
-    let indiceDocenteActual = 0, indiceCicloGeneral = 0, cambiosPendientes = false;
-
-    function registrarCambio() { cambiosPendientes = true; document.getElementById('txtWarning').style.display = 'block'; document.getElementById('btnGuardar').classList.add('btn-unsaved'); }
-
-    function limpiarCicloActual() {
-        const cic = ROMANOS[indiceCicloGeneral];
-        if (confirm(`¿Eliminar todos los cursos del CICLO ${cic}?`)) {
-            horariosPorCiclo[cic] = {};
-            registrarCambio();
-            cargarHorarioCiclo();
-            renderCursosAsignados();
+        function getColorPorDocente(nombre) {
+            if (!nombre) return "#FFFFFF";
+            let hash = 0;
+            for (let i = 0; i < nombre.length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash % 360)}, 75%, 85%)`;
         }
-    }
 
-    function borrarTodoElHorarioGlobal() {
-        if (confirm("⚠️ ADVERTENCIA: Se borrarán los horarios de TODOS los ciclos (I al X). ¿Deseas continuar?")) {
-            ROMANOS.forEach(cic => { horariosPorCiclo[cic] = {}; });
-            registrarCambio();
-            cargarHorarioCiclo();
-            renderCursosAsignados();
+        // OPTIMIZACIÓN: Mapa de cache para conteo de horas (O(1) lookup)
+        let hoursCache = new Map();
+
+        function recalcularCacheHoras() {
+            hoursCache.clear();
+            Object.values(horariosPorCiclo).forEach(ciclo => {
+                Object.values(ciclo).forEach(bloqueList => {
+                    bloqueList.forEach(b => {
+                        const key = `${b.docente}|${b.codigo}|${b.subTipo}`;
+                        hoursCache.set(key, (hoursCache.get(key) || 0) + 1);
+                    });
+                });
+            });
         }
-    }
 
-    document.addEventListener('click', function(e) {
-        if (e.target.tagName === 'A' && e.target.closest('#mainNav')) {
-            if (cambiosPendientes) {
-                e.preventDefault();
-                if (!confirm("⚠️ Tienes cambios sin guardar. ¿Deseas salir?")) return;
-                cambiosPendientes = false; window.location.href = e.target.href;
+        function contarHorasUsadas(c, d, s) {
+            return hoursCache.get(`${d}|${c}|${s}`) || 0;
+        }
+
+        window.onload = () => {
+            db.enablePersistence().catch(err => {
+                console.warn("Persistencia no habilitada:", err.code);
+            });
+
+            // --- CARGA INSTANTÁNEA DESDE CACHÉ (Strategy: Cache-First) ---
+            const cachedConfig = localStorage.getItem("cached_config_general");
+            const cachedDocentes = localStorage.getItem("cached_docentes_list");
+            const cachedHorarios = localStorage.getItem("cached_horarios_data");
+
+            if (cachedConfig) {
+                try {
+                    malla = JSON.parse(cachedConfig).mallaParaDocentes || [];
+                }
+
+                catch (e) { }
             }
+
+            if (cachedDocentes) {
+                try {
+                    docentes = JSON.parse(cachedDocentes) || [];
+                }
+
+                catch (e) { }
+            }
+
+            if (cachedHorarios) {
+                try {
+                    const data = JSON.parse(cachedHorarios);
+
+                    horariosPorCiclo = data.horariosGeneral || {}
+
+                        ;
+                    indiceCicloGeneral = data.savedCicloIdx || 0;
+                    if (data.savedDocenteIdx !== undefined) indiceDocenteActual = data.savedDocenteIdx;
+                }
+
+                catch (e) { }
+            }
+
+            // Renderizar inmediatamente con lo que haya en caché
+            recalcularCacheHoras();
+            poblarSelectorDocentes();
+            actualizarInterfazCiclo(); // FORCE RENDER of cycle structure
+
+            if (docentes.length > 0) {
+                actualizarTurnoDocente();
+            }
+
+            else {
+                actualizarInterfazCiclo();
+            }
+
+            // --- LISTENERS EN TIEMPO REAL (onSnapshot) ---
+
+            // 1. Configuración (Malla)
+            db.collection("planificacion").doc("config_general").onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const newMalla = data.mallaParaDocentes || [];
+                    if (JSON.stringify(malla) !== JSON.stringify(newMalla)) {
+                        malla = newMalla;
+                        localStorage.setItem("cached_config_general", JSON.stringify({ mallaParaDocentes: malla }));
+                        console.log("Malla actualizada.");
+                        // No necesariamente requiere re-render total si no cambia la asignación
+                    }
+                }
+            });
+
+            // 2. Docentes (Carga Docente)
+            db.collection("planificacion").doc("lista_docentes").onSnapshot(doc => {
+                if (doc.exists) {
+                    const newDocentes = doc.data().docentes || [];
+                    if (JSON.stringify(docentes) !== JSON.stringify(newDocentes)) {
+                        docentes = newDocentes;
+                        localStorage.setItem("cached_docentes_list", JSON.stringify(docentes));
+                        console.log("Docentes/Carga actualizados.");
+
+                        recalcularCacheHoras();
+                        poblarSelectorDocentes();
+
+                        // Refrescar vistas
+                        if (indiceDocenteActual !== null && docentes[indiceDocenteActual]) {
+                            actualizarTurnoDocente();
+                        }
+
+                        // También refrescar la tabla general si estamos viéndola
+                        actualizarInterfazCiclo();
+                    }
+                }
+            });
+
+            // 3. Horarios (Distribución de horarios)
+            db.collection("planificacion").doc("horarios").onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const newHorarios = data.horariosGeneral || {};
+
+                    if (JSON.stringify(horariosPorCiclo) !== JSON.stringify(newHorarios)) {
+                        horariosPorCiclo = newHorarios;
+                        localStorage.setItem("cached_horarios_data", JSON.stringify(data));
+                        console.log("Horarios actualizados.");
+
+                        recalcularCacheHoras();
+                        actualizarInterfazCiclo(); // Refrescar tabla principal
+                        if (indiceDocenteActual !== null) actualizarTurnoDocente(); // Refrescar vista docente si está activa
+                    }
+                }
+            });
         }
-    });
 
-    function getColorPorDocente(nombre) {
-        if(!nombre) return "#FFFFFF";
-        let hash = 0;
-        for (let i = 0; i < nombre.length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
-        return `hsl(${Math.abs(hash % 360)}, 75%, 85%)`;
-    }
+            ;
 
-    window.onload = async () => {
-        const config = await db.collection("planificacion").doc("config_general").get();
-        if(config.exists) malla = config.data().mallaParaDocentes || [];
-        const docs = await db.collection("planificacion").doc("lista_docentes").get();
-        if(docs.exists) docentes = docs.data().docentes || [];
-        const hor = await db.collection("planificacion").doc("horarios").get();
-        if(hor.exists) { horariosPorCiclo = hor.data().horariosGeneral || {}; indiceDocenteActual = 0; indiceCicloGeneral = hor.data().savedCicloIdx || 0; }
-        poblarSelectorDocentes();
-        if(docentes.length > 0) actualizarTurnoDocente(); 
-    };
+        function poblarSelectorDocentes() {
+            const select = document.getElementById('selectDirectoDocente');
+            select.innerHTML = '<option value="">Ir a docente...</option>';
 
-    function poblarSelectorDocentes() {
-        const select = document.getElementById('selectDirectoDocente');
-        select.innerHTML = '<option value="">Ir a docente...</option>';
-        docentes.forEach((d, idx) => { select.innerHTML += `<option value="${idx}">${idx + 1}. ${d.nombre}</option>`; });
-    }
-
-    function irADocenteEspecifico(idx) { if(idx === "") return; indiceDocenteActual = parseInt(idx); actualizarTurnoDocente(); }
-
-    function actualizarInterfazCiclo() {
-        const cic = ROMANOS[indiceCicloGeneral], esM = (indiceCicloGeneral % 2 === 0);
-        document.getElementById('cicloActualDisplay').innerText = `CICLO ${cic}`;
-        document.getElementById('tituloHorario').innerText = `HORARIO ACADÉMICO - CICLO ${cic}`;
-        const lb = document.getElementById('labelTurno');
-        lb.innerText = esM ? "TURNO: MAÑANA" : "TURNO: TARDE";
-        lb.style.backgroundColor = esM ? "#3182ce" : "#dd6b20";
-        cargarHorarioCiclo();
-        const scroll = document.getElementById('scrollPrincipal');
-        if (!esM) setTimeout(() => scroll.scrollTo({ top: 800, behavior: 'smooth' }), 100);
-        else scroll.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function generarTablaBase() {
-        const cuerpo = document.getElementById('cuerpoHorario');
-        cuerpo.innerHTML = "";
-        hMañana.forEach((h, i) => { cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5,6].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("") + `</tr>`; });
-        cuerpo.innerHTML += `<tr><td colspan="7" style="background:#cbd5e0; font-weight:bold; height:25px; font-size:11px; text-align:center;">RECESO</td></tr>`;
-        hTarde.forEach((h, i) => { const rI = i + 6; cuerpo.innerHTML += `<tr><td class="hour-cell">${h}</td>` + [1,2,3,4,5,6].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("") + `</tr>`; });
-    }
-
-    function obtenerDocenteActualizado(codigo, subTipoBloque, nombreGuardado) {
-        const docenteOrigen = docentes.find(d => 
-            d.nombre.trim() === nombreGuardado.trim() && 
-            d.carga.some(c => c.codigo.toString().trim() === codigo.toString().trim())
-        );
-        if (docenteOrigen) return docenteOrigen.nombre;
-
-        if (subTipoBloque === 'HT') {
-            const full = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'FULL'));
-            return full ? full.nombre : nombreGuardado;
-        } else {
-            const hpOnly = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'HP'));
-            if (hpOnly) return hpOnly.nombre;
-            const full = docentes.find(d => d.carga && d.carga.some(c => c.codigo === codigo && c.tipo === 'FULL'));
-            return full ? full.nombre : nombreGuardado;
+            docentes.forEach((d, idx) => {
+                select.innerHTML += `<option value="${idx}">${idx + 1}. ${d.nombre}</option>`;
+            });
+            if (docentes[indiceDocenteActual]) select.value = indiceDocenteActual;
         }
-    }
 
-    function cargarHorarioCiclo() { 
-        generarTablaBase(); 
-        const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}; 
-        Object.keys(data).forEach(k => { 
-            const cont = document.getElementById(`cell-${k}`); 
-            if(cont) data[k].forEach((inf, idx) => { 
-                const nombreAMostrar = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
-                const b = document.createElement('div'); b.className = 'dropped-course'; 
-                b.style.backgroundColor = getColorPorDocente(nombreAMostrar); 
-                b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span>`; 
-                cont.appendChild(b); 
-            }); 
-        }); 
-    }
+        function irADocenteEspecifico(idx) {
+            if (idx === "") return;
+            indiceDocenteActual = parseInt(idx);
+            actualizarTurnoDocente();
+        }
 
-    function navegarCicloGeneral(dir) { indiceCicloGeneral = Math.max(0, Math.min(9, indiceCicloGeneral + dir)); actualizarInterfazCiclo(); renderCursosAsignados(); }
-    function sincronizarYRender() { const sel = document.getElementById('filtroCicloDocente').value; if(sel) { indiceCicloGeneral = ROMANOS.indexOf(sel); actualizarInterfazCiclo(); } renderCursosAsignados(); }
-    function cambiarDocente(dir) { indiceDocenteActual = Math.max(0, Math.min(docentes.length - 1, indiceDocenteActual + dir)); actualizarTurnoDocente(); }
-    
-    function actualizarTurnoDocente() { 
-        const doc = docentes[indiceDocenteActual]; if(!doc) return; 
-        document.getElementById('selectDirectoDocente').value = indiceDocenteActual;
-        document.getElementById('nombreDocenteActual').innerText = `${indiceDocenteActual + 1}. ${doc.nombre}`; 
-        const select = document.getElementById('filtroCicloDocente'); select.innerHTML = ""; 
-        let ciclosSet = new Set(); 
-        doc.carga.forEach(item => { const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); if(cM) ciclosSet.add(cM["CICLO"].toString().trim()); }); 
-        Array.from(ciclosSet).sort((a,b) => ROMANOS.indexOf(a) - ROMANOS.indexOf(b)).forEach(c => select.innerHTML += `<option value="${c}">Ciclo ${c}</option>`); 
-        if (ciclosSet.size > 0) { select.value = ROMANOS[indiceCicloGeneral] || Array.from(ciclosSet)[0]; sincronizarYRender(); } 
-        else { actualizarInterfazCiclo(); renderCursosAsignados(); } 
-    }
-
-    function drop(e, f, d) { 
-        e.preventDefault(); const info = JSON.parse(e.dataTransfer.getData("info")), cic = ROMANOS[indiceCicloGeneral], key = `${f}-${d}`; 
-        let conf = null; Object.keys(horariosPorCiclo).forEach(c => { if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c; }); 
-        if(conf) return alert("Cruce en Ciclo "+conf); 
-        if(!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {}; if(!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = []; 
-        if(horariosPorCiclo[cic][key].length >= 2) return alert("Celda llena"); 
-        horariosPorCiclo[cic][key].push(info); registrarCambio(); cargarHorarioCiclo(); renderCursosAsignados(); 
-    }
-
-    function allowDrop(e) { e.preventDefault(); }
-    function renderCursosAsignados() { 
-        const container = document.getElementById('listaParaArrastrar'); container.innerHTML = ""; 
-        const doc = docentes[indiceDocenteActual], cicFil = document.getElementById('filtroCicloDocente').value; if(!doc) return; 
-        const colDocente = getColorPorDocente(doc.nombre);
-        doc.carga.forEach(item => { 
-            const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim()); 
-            if(cM && cM["CICLO"] === cicFil) { 
-                const htR = (parseInt(cM["HT"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HT'), hpR = (parseInt(cM["HP"])||0) - contarHorasUsadas(item.codigo, doc.nombre, 'HP'); 
-                if (item.tipo === 'FULL' && htR > 0) crearItemArrastre(container, item, doc.nombre, 'HT', htR, colDocente); 
-                if (hpR > 0) crearItemArrastre(container, item, doc.nombre, 'HP', hpR, colDocente); 
-            } 
-        }); 
-    }
-
-    function contarHorasUsadas(c, d, s) { let count = 0; Object.values(horariosPorCiclo).forEach(ciclo => { Object.values(ciclo).forEach(sl => { sl.forEach(b => { if(b.codigo.trim() === c.trim() && b.docente === d && b.subTipo === s) count++; }); }); }); return count; }
-    function crearItemArrastre(cont, it, doc, tip, res, col) { 
-        const d = document.createElement('div'); d.className = 'drag-item'; d.style.borderLeftColor = col; d.draggable = true; 
-        d.innerHTML = `<span style="background:${tip==='HT'?'#ed8936':'#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span> <strong>${res}h</strong> ${it.nombre}`; 
-        d.ondragstart = (e) => { e.dataTransfer.setData("info", JSON.stringify({ curso: it.nombre, docente: doc, codigo: it.codigo, subTipo: tip })); }; 
-        cont.appendChild(d); 
-    }
-
-    function quitar(k, i) { horariosPorCiclo[ROMANOS[indiceCicloGeneral]][k].splice(i, 1); registrarCambio(); cargarHorarioCiclo(); renderCursosAsignados(); }
-    async function guardarTodoPermanente() { 
-        try { 
-            await db.collection("planificacion").doc("horarios").set({ horariosGeneral: horariosPorCiclo, savedDocenteIdx: 0, savedCicloIdx: indiceCicloGeneral, ultimaActualizacion: new Date() }); 
-            cambiosPendientes = false; document.getElementById('txtWarning').style.display = 'none'; document.getElementById('btnGuardar').classList.remove('btn-unsaved'); alert("✅ Guardado."); 
-        } catch(e) { alert("❌ Error."); } 
-    }
-
-    function imprimirSoloVistaActual() {
-        const cic = ROMANOS[indiceCicloGeneral], data = horariosPorCiclo[cic] || {}, printContainer = document.getElementById('print-section');
-        printContainer.innerHTML = ""; 
-        let paginas = [];
-        let hayM = false, hayT = false;
-        for(let i=0; i<6; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-        for(let i=6; i<12; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
-        if(hayM) paginas.push({turno: "MAÑANA", horas: hMañana, offset: 0});
-        if(hayT) paginas.push({turno: "TARDE", horas: hTarde, offset: 6});
-        if(paginas.length === 0) {
+        function actualizarInterfazCiclo() {
+            const cic = ROMANOS[indiceCicloGeneral];
             const esM = (indiceCicloGeneral % 2 === 0);
-            paginas.push(esM ? {turno: "MAÑANA", horas: hMañana, offset: 0} : {turno: "TARDE", horas: hTarde, offset: 6});
+
+            document.getElementById('cicloActualDisplay').innerText = `CICLO ${cic}`;
+
+            document.getElementById('tituloHorario').innerText = `HORARIO ACADÉMICO - CICLO ${cic}`;
+
+            const lb = document.getElementById('labelTurno');
+            lb.innerText = esM ? "TURNO: MAÑANA" : "TURNO: TARDE";
+            lb.style.backgroundColor = esM ? "#3182ce" : "#dd6b20";
+
+            // Re-generar estructura tabla solo si es necesario (cambio de turno/ciclo)
+            // Por consistencia visual, regeneramos la base y llenamos
+            generarTablaBase();
+
+            const scroll = document.getElementById('scrollPrincipal');
+
+            if (!esM) setTimeout(() => scroll.scrollTo({
+                top: 800, behavior: 'smooth'
+            }), 100);
+
+            else scroll.scrollTo({
+                top: 0, behavior: 'smooth'
+            });
         }
-        paginas.forEach(p => generarPaginaTurno(printContainer, cic, p.turno, p.horas, p.offset));
-        setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
-    }
 
-    function imprimirTodosLosCiclos() {
-        const printContainer = document.getElementById('print-section');
-        printContainer.innerHTML = "";
-        ROMANOS.forEach((cic) => {
+        let renderTimeout; // Variable global para controlar rebotes
+
+        function generarTablaBase() {
+            if (renderTimeout) clearTimeout(renderTimeout);
+
+            const cuerpo = document.getElementById('cuerpoHorario');
+            if (!cuerpo) return;
+
+            // Clean existing
+            cuerpo.innerHTML = "";
+            const fragment = document.createDocumentFragment();
+
+            hMañana.forEach((h, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="hour-cell">${h}</td>` + [1, 2, 3, 4, 5, 6].map(d => `<td ondrop="drop(event, ${i}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${i}-${d}"></div></td>`).join("");
+                fragment.appendChild(tr);
+            });
+
+            const trReceso = document.createElement('tr');
+            trReceso.innerHTML = `<td colspan="7" style="background:#cbd5e0; font-weight:bold; height:25px; font-size:11px; text-align:center;">RECESO</td>`;
+            fragment.appendChild(trReceso);
+
+            // Row for Days Header (After Recess)
+            const trHeaderTarde = document.createElement('tr');
+            trHeaderTarde.innerHTML = `
+                <th class="hour-cell" style="background:var(--blue); color:white;">HORA</th>
+                <th style="background:var(--blue); color:white;">LUNES</th>
+                <th style="background:var(--blue); color:white;">MARTES</th>
+                <th style="background:var(--blue); color:white;">MIÉRCOLES</th>
+                <th style="background:var(--blue); color:white;">JUEVES</th>
+                <th style="background:var(--blue); color:white;">VIERNES</th>
+                <th style="background:var(--blue); color:white;">SÁBADO</th>
+            `;
+            fragment.appendChild(trHeaderTarde);
+
+            hTarde.forEach((h, i) => {
+                const rI = i + 6;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="hour-cell">${h}</td>` + [1, 2, 3, 4, 5, 6].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("");
+                fragment.appendChild(tr);
+            });
+
+            cuerpo.appendChild(fragment);
+
+            // Una vez generada la estructura, llenamos el contenido
+            // Guardamos el timeout ID para poder cancelarlo si se llama rápido de nuevo
+            renderTimeout = setTimeout(renderBloquesEnTabla, 0);
+        }
+
+        // Nueva función separada para no destruir la tabla
+        function renderBloquesEnTabla() {
+            const cic = ROMANOS[indiceCicloGeneral];
             const data = horariosPorCiclo[cic] || {};
-            let hayM = false, hayT = false;
-            for(let i=0; i<6; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayM = true;
-            for(let i=6; i<12; i++) for(let d=1; d<=6; d++) if(data[`${i}-${d}`]?.length > 0) hayT = true;
-            if(hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
-            if(hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
-        });
-        setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
-    }
 
-    function generarPaginaTurno(contenedor, ciclo, nombreTurno, horasTurno, offset) {
-        const dataCiclo = horariosPorCiclo[ciclo] || {};
-        let html = `<div class="page-break">
-            <h1>HORARIO ACADÉMICO - CICLO ${ciclo}</h1>
-            <h2>TURNO: ${nombreTurno}</h2>
-            <table class="schedule-table">
-                <thead><tr><th style="width:85px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SABADO</th></tr></thead>
-                <tbody>`;
-        horasTurno.forEach((h, idx) => {
-            const realIdx = idx + offset; html += `<tr><td class="hour-cell">${h}</td>`;
-            for (let dia = 1; dia <= 6; dia++) {
-                const key = `${realIdx}-${dia}`, bloques = dataCiclo[key] || [];
-                html += `<td><div class="diagonal-container">` + bloques.map(inf => {
-                    const nombreFin = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
-                    return `<div class="dropped-course" style="background-color:${getColorPorDocente(nombreFin)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreFin}</span><span class="tag-tipo ${inf.subTipo==='HT'?'tag-ht':'tag-hp'}">${inf.subTipo}</span></div>`;
-                }).join("") + `</div></td>`;
+            // MIGRACIÓN DE DATOS (Sanitizar claves antiguas con saltos de línea)
+            let migrated = false;
+            Object.keys(data).forEach(k => {
+                const cleanKey = k.toString().trim().replace(/\s/g, '');
+                if (k !== cleanKey) {
+                    if (!data[cleanKey]) data[cleanKey] = [];
+                    data[cleanKey] = data[cleanKey].concat(data[k]);
+                    delete data[k];
+                    migrated = true;
+                }
+            });
+            if (migrated) {
+                console.log("Datos migrados a claves limpias en ciclo", cic);
+                registrarCambio(); // Marcar para guardar
             }
-            html += `</tr>`;
+
+            Object.keys(data).forEach(k => {
+                const cont = document.getElementById(`cell-${k}`);
+
+                if (cont) {
+                    // LIMPIAR CONTENIDO ANTES DE AGREGAR (Evita duplicados por re-renders rápidos)
+                    cont.innerHTML = "";
+
+                    // Fragment para los bloques dentro de la celda
+                    const blockFrag = document.createDocumentFragment();
+
+                    data[k].forEach((inf, idx) => {
+                        const nombreAMostrar = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
+                        const isCompact = data[k].length > 1 ? ' small-text' : '';
+                        const b = document.createElement('div');
+                        b.className = 'dropped-course' + isCompact;
+                        b.style.backgroundColor = getColorPorDocente(nombreAMostrar);
+
+                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
+                        blockFrag.appendChild(b);
+                    });
+                    cont.appendChild(blockFrag);
+                }
+            });
+        }
+
+        // Compatibilidad con código anterior que llamaba a cargarHorarioCiclo
+        function cargarHorarioCiclo() {
+            // Ahora solo limpiamos las celdas existentes y re-llenamos
+            // Esto evita destruir <tr> y <td>, solo toca los divs internos
+            const cuerpo = document.getElementById('cuerpoHorario');
+            const celdas = cuerpo.querySelectorAll('.diagonal-container');
+            celdas.forEach(c => c.innerHTML = ""); // Limpieza rápida
+            renderBloquesEnTabla();
+        }
+
+        function navegarCicloGeneral(dir) {
+            indiceCicloGeneral = Math.max(0, Math.min(9, indiceCicloGeneral + dir));
+            actualizarInterfazCiclo();
+            renderCursosAsignados();
+        }
+
+        function sincronizarYRender() {
+            const sel = document.getElementById('filtroCicloDocente').value;
+
+            if (sel) {
+                indiceCicloGeneral = ROMANOS.indexOf(sel);
+                actualizarInterfazCiclo();
+            }
+
+            renderCursosAsignados();
+        }
+
+        // --- MISSING HELPER FUNCTIONS RESTORED ---
+
+        function irADocenteEspecifico(val) {
+            if (val === "") return;
+            indiceDocenteActual = parseInt(val);
+            actualizarTurnoDocente();
+        }
+
+        function getColorPorDocente(nombre) {
+            let hash = 0;
+            if (!nombre) return "#f0f0f0";
+            for (let i = 0; i < nombre.length; i++) {
+                hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // HSL to pastel HEX
+            const h = Math.abs(hash % 360);
+            return hslToHex(h, 70, 85);
+        }
+
+        // Helper function for HSL to Hex conversion
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function cambiarDocente(dir) {
+            indiceDocenteActual = Math.max(0, Math.min(docentes.length - 1, indiceDocenteActual + dir));
+            actualizarTurnoDocente();
+        }
+
+        function actualizarTurnoDocente() {
+            const doc = docentes[indiceDocenteActual];
+            if (!doc) return;
+            document.getElementById('selectDirectoDocente').value = indiceDocenteActual;
+
+            document.getElementById('nombreDocenteActual').innerText = `${indiceDocenteActual + 1}. ${doc.nombre}`;
+            const select = document.getElementById('filtroCicloDocente');
+            select.innerHTML = "";
+            let ciclosSet = new Set();
+
+            doc.carga.forEach(item => {
+                const cM = malla.find(m => m["CÓD.ASIG."] && m["CÓD.ASIG."].toString().trim() === item.codigo.toString().trim()); if (cM) ciclosSet.add(cM["CICLO"].toString().trim());
+            });
+            const sortedCycles = Array.from(ciclosSet).sort((a, b) => ROMANOS.indexOf(a) - ROMANOS.indexOf(b));
+
+            sortedCycles.forEach(c => select.innerHTML += `<option value="${c}">Ciclo ${c}</option>`);
+
+            const currentGlobal = ROMANOS[indiceCicloGeneral];
+
+            if (ciclosSet.has(currentGlobal)) {
+                select.value = currentGlobal;
+            }
+
+            else if (sortedCycles.length > 0) {
+                select.value = sortedCycles[0];
+                // Opcional: Si queremos forzar el cambio de vista global al ciclo del docente:
+                // indiceCicloGeneral = ROMANOS.indexOf(sortedCycles[0]);
+                // actualizarInterfazCiclo();
+            }
+
+            if (sortedCycles.length > 0) {
+                sincronizarYRender();
+            }
+
+            else {
+                renderCursosAsignados();
+            }
+        }
+
+        function obtenerDocenteActualizado(codigo, subTipoBloque, nombreGuardado) {
+            // Guard clause if no teachers loaded yet
+            if (!docentes || docentes.length === 0) return nombreGuardado;
+
+            const codeStr = codigo.toString().trim();
+            const nameStr = nombreGuardado ? nombreGuardado.toString().trim() : "";
+
+            // 1. Try to find by name AND code (most specific)
+            const docenteOrigen = docentes.find(d =>
+                d.nombre.trim() === nameStr &&
+                d.carga.some(c => c.codigo.toString().trim() === codeStr)
+            );
+            if (docenteOrigen) return docenteOrigen.nombre;
+
+            // 2. Try to find by code and type (if name didn't match or was a code)
+            let found = null;
+            if (subTipoBloque === 'HT') {
+                found = docentes.find(d => d.carga && d.carga.some(c => c.codigo.toString().trim() === codeStr && c.tipo === 'FULL'));
+            } else {
+                found = docentes.find(d => d.carga && d.carga.some(c => c.codigo.toString().trim() === codeStr && c.tipo === 'HP'));
+                if (!found) {
+                    found = docentes.find(d => d.carga && d.carga.some(c => c.codigo.toString().trim() === codeStr && c.tipo === 'FULL'));
+                }
+            }
+
+            return found ? found.nombre : nombreGuardado;
+        }
+
+        function drop(e, f, d) {
+            e.preventDefault();
+
+            try {
+                const raw = e.dataTransfer.getData("info");
+                if (!raw) return console.error("No info in drop");
+                const info = JSON.parse(raw);
+                const cic = ROMANOS[indiceCicloGeneral];
+
+                const key = `${f}-${d}`;
+                console.log("Dropping:", info, "into", cic, key);
+
+                let conf = null;
+
+                Object.keys(horariosPorCiclo).forEach(c => {
+                    if (horariosPorCiclo[c][key]?.some(b => b.docente === info.docente)) conf = c;
+                });
+                if (conf) return alert("Cruce en Ciclo " + conf);
+
+                if (!horariosPorCiclo[cic]) horariosPorCiclo[cic] = {};
+                if (!horariosPorCiclo[cic][key]) horariosPorCiclo[cic][key] = [];
+                if (horariosPorCiclo[cic][key].length >= 2) return alert("Celda llena");
+
+                // 1. Actualizar Datos
+                horariosPorCiclo[cic][key].push(info);
+
+                // 2. Actualizar Cache (Incremental O(1))
+                const cacheKey = `${info.docente}|${info.codigo}|${info.subTipo}`;
+                hoursCache.set(cacheKey, (hoursCache.get(cacheKey) || 0) + 1);
+
+                // 3. Renderizado Localizado (Solo esta celda)
+                registrarCambio();
+                renderCelda(cic, key);
+                renderCursosAsignados(); // Actualizar barra lateral con nuevos contadores
+            } catch (err) {
+                console.error("Error in drop:", err);
+                alert("Error al soltar el bloque: " + err.message);
+            }
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function renderCelda(ciclo, key) {
+            try {
+                const cont = document.getElementById(`cell-${key}`);
+                if (!cont) return console.warn("Cell container not found:", key);
+
+                cont.innerHTML = ""; // Limpiar solo esta celda
+                const data = horariosPorCiclo[ciclo]?.[key] || [];
+
+                const blockFrag = document.createDocumentFragment();
+
+                data.forEach((inf, idx) => {
+                    try {
+                        const nombreAMostrar = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
+                        const isCompact = data.length > 1 ? ' small-text' : '';
+                        const b = document.createElement('div');
+                        b.className = 'dropped-course' + isCompact;
+                        b.style.backgroundColor = getColorPorDocente(nombreAMostrar);
+
+                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${key}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
+                        blockFrag.appendChild(b);
+                    } catch (innerErr) {
+                        console.error("Error rendering item in cell:", innerErr, inf);
+                    }
+                });
+                cont.appendChild(blockFrag);
+            } catch (err) {
+                console.error("Error in renderCelda:", err);
+            }
+        }
+
+        function quitar(key, idx) {
+            const cic = ROMANOS[indiceCicloGeneral];
+            const bloque = horariosPorCiclo[cic][key][idx];
+
+            // 1. Actualizar Datos
+            horariosPorCiclo[cic][key].splice(idx, 1);
+
+            // 2. Actualizar Cache (Incremental O(1))
+            // IMPORTANTE: Usamos los datos del bloque eliminado
+            if (bloque) {
+                const cacheKey = `${bloque.docente}|${bloque.codigo}|${bloque.subTipo}`;
+                hoursCache.set(cacheKey, Math.max(0, (hoursCache.get(cacheKey) || 0) - 1));
+            }
+
+            // 3. Renderizado Localizado
+            registrarCambio();
+            renderCelda(cic, key);
+            renderCursosAsignados();
+        }
+
+        // Optimizado para usar cache
+        function renderCursosAsignados() {
+            const container = document.getElementById('listaParaArrastrar');
+            container.innerHTML = ""; // Esto es rápido si el contenido no es enorme
+
+            const doc = docentes[indiceDocenteActual];
+            const cicFil = document.getElementById('filtroCicloDocente').value;
+            if (!doc) return;
+
+            const colDocente = getColorPorDocente(doc.nombre);
+            const fragment = document.createDocumentFragment();
+
+            doc.carga.forEach(item => {
+                const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim());
+
+                if (cM && cM["CICLO"] === cicFil) {
+
+                    // USO DE CACHE O(1)
+                    const htUsadas = hoursCache.get(`${doc.nombre}|${item.codigo}|HT`) || 0;
+                    const hpUsadas = hoursCache.get(`${doc.nombre}|${item.codigo}|HP`) || 0;
+
+                    const htR = (parseInt(cM["HT"]) || 0) - htUsadas;
+                    const hpR = (parseInt(cM["HP"]) || 0) - hpUsadas;
+
+                    if (item.tipo === 'FULL' && htR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HT', htR, colDocente);
+                    if (hpR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HP', hpR, colDocente);
+                }
+            });
+            container.appendChild(fragment);
+        }
+
+        // Ya no necesita recorrer todo el array, usamos el cache directo en renderCursosAsignados
+        // Pero mantenemos la función por compatibilidad si es llamada desde otros sitios (aunque ahora renderCursosAsignados lee directo)
+        function contarHorasUsadas(c, d, s) {
+            return hoursCache.get(`${d}|${c}|${s}`) || 0;
+        }
+
+        function crearItemArrastre(cont, it, doc, tip, res, col) {
+            const d = document.createElement('div');
+            d.className = 'drag-item';
+            d.style.borderLeftColor = col;
+            d.draggable = true;
+
+            d.innerHTML = `<span style="background:${tip === 'HT' ? '#ed8936' : '#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span><strong>${res}h</strong>${it.nombre}`;
+
+            d.ondragstart = (e) => {
+                e.dataTransfer.setData("info", JSON.stringify({
+                    curso: it.nombre, docente: doc, codigo: it.codigo, subTipo: tip
+                }));
+            };
+            cont.appendChild(d);
+        }
+
+
+
+        function imprimirSoloVistaActual() {
+            const cic = ROMANOS[indiceCicloGeneral];
+            const data = horariosPorCiclo[cic] || {};
+            const printContainer = document.getElementById('print-section');
+            printContainer.innerHTML = "";
+
+            let paginas = [];
+            let hayM = false, hayT = false;
+
+            for (let i = 0; i < 6; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayM = true;
+            for (let i = 6; i < 12; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayT = true;
+
+            if (hayM) paginas.push({ turno: "MAÑANA", horas: hMañana, offset: 0 });
+            if (hayT) paginas.push({ turno: "TARDE", horas: hTarde, offset: 6 });
+
+            if (paginas.length === 0) {
+                const esM = (indiceCicloGeneral % 2 === 0);
+                paginas.push(esM ? { turno: "MAÑANA", horas: hMañana, offset: 0 } : { turno: "TARDE", horas: hTarde, offset: 6 });
+            }
+
+            paginas.forEach(p => generarPaginaTurno(printContainer, cic, p.turno, p.horas, p.offset));
+            setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+        }
+
+        function imprimirTodosLosCiclos() {
+            const printContainer = document.getElementById('print-section');
+            printContainer.innerHTML = "";
+
+            ROMANOS.forEach((cic) => {
+                const data = horariosPorCiclo[cic] || {};
+                let hayM = false, hayT = false;
+                for (let i = 0; i < 6; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayM = true;
+                for (let i = 6; i < 12; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayT = true;
+                if (hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
+                if (hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
+            });
+
+            setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+        }
+
+        async function guardarTodoPermanente(silent = false) {
+            try {
+                // 1. Guardar en Firestore
+                await db.collection("planificacion").doc("horarios").set({
+                    horariosGeneral: horariosPorCiclo,
+                    savedDocenteIdx: 0,
+                    savedCicloIdx: indiceCicloGeneral,
+                    ultimaActualizacion: new Date()
+                });
+
+                // 2. Actualizar Cache Local (Critical for instant reload)
+                localStorage.setItem("cached_horarios_data", JSON.stringify({
+                    horariosGeneral: horariosPorCiclo,
+                    savedDocenteIdx: 0,
+                    savedCicloIdx: indiceCicloGeneral
+                }));
+
+                cambiosPendientes = false;
+                const st = document.getElementById('statusGuardado');
+
+                if (silent) {
+                    if (st) {
+                        st.innerText = "✅ Guardado";
+                        st.style.color = "var(--green)";
+                        setTimeout(() => { if (st.innerText.includes("Guardado")) st.innerText = ""; }, 3000);
+                    }
+                } else {
+                    alert("✅ Guardado.");
+                }
+
+            } catch (e) {
+                console.error(e);
+                const st = document.getElementById('statusGuardado');
+                if (st && silent) {
+                    st.innerText = "❌ Error al guardar";
+                    st.style.color = "red";
+                } else if (!silent) {
+                    alert("❌ Error al guardar.");
+                }
+            }
+        }
+
+        function imprimirSoloVistaActual() {
+            const cic = ROMANOS[indiceCicloGeneral];
+            const data = horariosPorCiclo[cic] || {};
+            const printContainer = document.getElementById('print-section');
+            printContainer.innerHTML = "";
+
+            let paginas = [];
+            let hayM = false, hayT = false;
+
+            for (let i = 0; i < 6; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayM = true;
+            for (let i = 6; i < 12; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayT = true;
+
+            if (hayM) paginas.push({ turno: "MAÑANA", horas: hMañana, offset: 0 });
+            if (hayT) paginas.push({ turno: "TARDE", horas: hTarde, offset: 6 });
+
+            if (paginas.length === 0) {
+                const esM = (indiceCicloGeneral % 2 === 0);
+                paginas.push(esM ? { turno: "MAÑANA", horas: hMañana, offset: 0 } : { turno: "TARDE", horas: hTarde, offset: 6 });
+            }
+
+            paginas.forEach(p => generarPaginaTurno(printContainer, cic, p.turno, p.horas, p.offset));
+            setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+        }
+
+        function imprimirTodosLosCiclos() {
+            const printContainer = document.getElementById('print-section');
+            printContainer.innerHTML = "";
+
+            ROMANOS.forEach((cic) => {
+                const data = horariosPorCiclo[cic] || {};
+                let hayM = false, hayT = false;
+                for (let i = 0; i < 6; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayM = true;
+                for (let i = 6; i < 12; i++) for (let d = 1; d <= 6; d++) if (data[`${i}-${d}`]?.length > 0) hayT = true;
+                if (hayM) generarPaginaTurno(printContainer, cic, "MAÑANA", hMañana, 0);
+                if (hayT) generarPaginaTurno(printContainer, cic, "TARDE", hTarde, 6);
+            });
+
+            setTimeout(() => { window.print(); printContainer.innerHTML = ""; }, 300);
+        }
+
+        function generarPaginaTurno(contenedor, ciclo, nombreTurno, horasTurno, offset) {
+            const dataCiclo = horariosPorCiclo[ciclo] || {};
+            let html = `<div class="page-break"><h1>HORARIO ACADÉMICO - CICLO ${ciclo}</h1><h2>TURNO: ${nombreTurno}</h2><table class="schedule-table"><thead><tr><th style="width:85px;">HORA</th><th>LUNES</th><th>MARTES</th><th>MIERCOLES</th><th>JUEVES</th><th>VIERNES</th><th>SABADO</th></tr></thead><tbody>`;
+
+            horasTurno.forEach((h, idx) => {
+                const realIdx = idx + offset;
+                html += `<tr><td class="hour-cell">${h}</td>`;
+                for (let dia = 1; dia <= 6; dia++) {
+                    const key = `${realIdx}-${dia}`;
+                    const bloques = dataCiclo[key] || [];
+                    html += `<td><div class="diagonal-container">` + bloques.map(inf => {
+                        const nombreFin = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
+                        const isCompact = bloques.length > 1 ? ' small-text' : '';
+                        return `<div class="dropped-course${isCompact}" style="background-color:${getColorPorDocente(nombreFin)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreFin}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span></div>`;
+                    }).join("") + `</div></td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            contenedor.innerHTML += html;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebarHorarios').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+
+        function abrirModalExportar() {
+            document.getElementById('modalExportar').style.display = 'flex';
+        }
+
+        async function generarExcelHorario() {
+            const fileInput = document.getElementById('filePlantillaHorario');
+            const startCellInput = document.getElementById('startCellHorario').value.trim().toUpperCase();
+
+            if (!startCellInput.match(/^[A-Z]+[0-9]+$/)) return alert("Formato de celda inválido (Ej: B5).");
+
+            let workbook = null;
+
+            try {
+                // 1. Obtener el archivo (Input o Guardado)
+                if (fileInput.files.length > 0) {
+                    // Caso A: Archivo seleccionado
+                    const file = fileInput.files[0];
+                    const buffer = await file.arrayBuffer();
+                    workbook = await XlsxPopulate.fromDataAsync(buffer);
+                } else if (urlPlantillaHorario) {
+                    // Caso B: Usar plantilla guardada
+                    console.log("Usando plantilla guardada:", urlPlantillaHorario.substring(0, 50) + "...");
+
+                    if (urlPlantillaHorario.startsWith("http")) {
+                        // Descargar de URL (Storage)
+                        const resp = await fetch(urlPlantillaHorario);
+                        if (!resp.ok) throw new Error("No se pudo descargar la plantilla guardada.");
+                        const buffer = await resp.arrayBuffer();
+                        workbook = await XlsxPopulate.fromDataAsync(buffer);
+                    } else if (urlPlantillaHorario.startsWith("data:") || urlPlantillaHorario === "BASE64") {
+                        // Fallback Base64 (Recuperar de Firestore si solo tenemos flag o string)
+                        let b64 = urlPlantillaHorario;
+                        if (urlPlantillaHorario === "BASE64") {
+                            const doc = await db.collection("planificacion").doc("config_horario_template").get();
+                            if (doc.exists && doc.data().base64) b64 = doc.data().base64;
+                            else throw new Error("Plantilla local corrupta.");
+                        }
+
+                        // Convert Base64 to Buffer
+                        const resp = await fetch(b64);
+                        const buffer = await resp.arrayBuffer();
+                        workbook = await XlsxPopulate.fromDataAsync(buffer);
+                    }
+                } else {
+                    return alert("⚠️ Por favor selecciona una plantilla Excel (o espera a que cargue la guardada).");
+                }
+
+                if (!workbook) throw new Error("No se pudo iniciar el workbook.");
+
+                // Parse Start Cell (e.g., "B5") -> Row 5, Col 2
+                const match = startCellInput.match(/^([A-Z]+)([0-9]+)$/);
+                const colStr = match[1];
+                const startRow = parseInt(match[2]);
+
+                // Convert Excel Column Letter to Index (A=1, B=2...)
+                let startColA = 0;
+                for (let i = 0; i < colStr.length; i++) {
+                    startColA = startColA * 26 + (colStr.charCodeAt(i) - 64);
+                }
+                // Group B starts at L10. Distance from C(3) to L(12) is 9 columns.
+                // We assume the user inputs the start of Group A (e.g. C10).
+                const startColB = startColA + 9;
+
+                // Iterate Cycles (Sheets)
+                ROMANOS.forEach((ciclo, sheetIdx) => {
+                    const sheet = workbook.sheet(sheetIdx);
+                    if (!sheet) return; // Skip if sheet doesn't exist
+
+                    const dataCiclo = horariosPorCiclo[ciclo] || {};
+
+                    // Iterate Hours (0-15 approx)
+                    for (let h = 0; h < 16; h++) {
+                        // Separar Mañana y Tarde
+                        // Mañana (0-5): StartRow + h (e.g. 10..15)
+                        // Tarde (6-11): StartRow + 9 + (h-6) (e.g. 19..24)
+                        // El "9" es la distancia entre el inicio de mañana (10) e inicio de tarde (19).
+                        const currentRow = h < 6 ? (startRow + h) : (startRow + 9 + (h - 6));
+
+                        // Iterate Days (1=Monday to 6=Saturday)
+                        for (let d = 1; d <= 6; d++) {
+                            const currentColA = startColA + (d - 1);
+                            const currentColB = startColB + (d - 1);
+
+                            const key = `${h}-${d}`;
+                            const bloques = dataCiclo[key];
+
+                            if (bloques && bloques.length > 0) {
+                                // Separar Grupos: A y B
+                                // REGLA ACTUALIZADA:
+                                // - Si es SOLO PRÁCTICA (SubTipo HP o asignación parcial) -> SIEMPRE B
+                                // - Si es COMPLETO (T+P):
+                                //    - El PRIMERO va a A.
+                                //    - Si ya hay uno en A (cruce/grupo paralelo), el SEGUNDO va a B.
+
+                                const bloquesA = [];
+                                const bloquesB = [];
+                                let fullCourseInA = false; // Flag para controlar ocupación de A
+
+                                bloques.forEach(b => {
+                                    let esSoloPractica = false;
+
+                                    // 1. Buscar el docente en memoria para ver su asignación original
+                                    const docEncontrado = docentes.find(d => d.nombre === b.docente);
+
+                                    if (docEncontrado && docEncontrado.carga) {
+                                        // 2. Buscar el curso específico dentro de su carga
+                                        const itemCarga = docEncontrado.carga.find(c => c.codigo.toString() === b.codigo.toString());
+
+                                        // 3. Verificar si la asignación es 'FULL' (Completa) o no
+                                        if (itemCarga && itemCarga.tipo !== 'FULL') {
+                                            esSoloPractica = true;
+                                        }
+                                    }
+
+                                    // 4. Clasificar el bloque
+                                    if (esSoloPractica) {
+                                        // Casos de practica pura (HP) siempre a B
+                                        bloquesB.push(b);
+                                    } else {
+                                        // Es un curso COMPLETO (T+P)
+                                        if (!fullCourseInA) {
+                                            // Si A está libre de teóricos, va a A
+                                            bloquesA.push(b);
+                                            fullCourseInA = true;
+                                        } else {
+                                            // Si A ya tiene un teórico, este es un Grupo Paralelo -> Va a B
+                                            bloquesB.push(b);
+                                        }
+                                    }
+                                });
+
+                                // Helper para escribir celda
+                                const writeCell = (col, blocks) => {
+                                    if (blocks.length === 0) return;
+                                    const cellText = blocks.map(b => {
+                                        const docenteName = obtenerDocenteActualizado(b.codigo, b.subTipo, b.docente);
+                                        return `${b.curso}\n${docenteName} (${b.subTipo})`;
+                                    }).join("\n\n");
+
+                                    const firstDocente = obtenerDocenteActualizado(blocks[0].codigo, blocks[0].subTipo, blocks[0].docente);
+                                    const hexColor = getColorPorDocente(firstDocente).replace('#', '');
+
+                                    const cell = sheet.row(currentRow).cell(col);
+                                    cell.value(cellText);
+                                    cell.style({
+                                        "wrapText": true,
+                                        "horizontalAlignment": "center",
+                                        "verticalAlignment": "center",
+                                        "fill": { type: "solid", color: hexColor },
+                                        "fontSize": 7,
+                                        "fontFamily": "Arial"
+                                    });
+                                };
+
+                                writeCell(currentColA, bloquesA);
+                                writeCell(currentColB, bloquesB);
+                            }
+                        }
+                    }
+                });
+
+                // Download
+                const blob = await workbook.outputAsync();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.href = url;
+                a.download = `Horario_Exportado_${new Date().getTime()}.xlsx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                document.getElementById('modalExportar').style.display = 'none';
+                alert("✅ Horario exportado con éxito.");
+
+            } catch (err) {
+                console.error(err);
+                alert("Error al procesar el Excel: " + err.message);
+            }
+        };
+
+        // --- INITIALIZATION ---
+        // db and storage are declared at the top (line 694)
+
+        window.onload = async () => {
+            // Cargar datos cacheados primero (para velocidad)
+            const cached = localStorage.getItem("cached_horarios_data");
+            if (cached) {
+                try {
+                    const p = JSON.parse(cached);
+                    if (p.horariosGeneral) horariosPorCiclo = p.horariosGeneral;
+                    if (p.savedCicloIdx !== undefined) indiceCicloGeneral = p.savedCicloIdx;
+                    renderBloquesEnTabla(); // Render inicial rápido
+                } catch (e) { console.error("Cache error", e); }
+            }
+
+            try {
+                // Cargar Docentes y Malla (Firebase)
+                await cargarDatos();
+
+                // Cargar Horarios (Firebase - Single Source of Truth)
+                await cargarHorariosGuardados();
+
+                // Setup UI
+                actualizarInterfazCiclo();
+                renderCursosAsignados();
+
+            } catch (err) {
+                console.error("Error crítico en carga:", err);
+            }
+        };
+
+        async function cargarDatos() {
+            // 1. Cargar Malla (Desde config_general que es donde el planificador guarda los datos procesados)
+            try {
+                const docConfig = await db.collection("planificacion").doc("config_general").get();
+                if (docConfig.exists) {
+                    const data = docConfig.data();
+                    if (data.mallaParaDocentes) {
+                        malla = data.mallaParaDocentes;
+                        console.log("Malla cargada desde config_general", malla.length);
+                    } else {
+                        throw new Error("No hay datos de malla en config_general");
+                    }
+                } else {
+                    // Fallback antiguo por si acaso
+                    const docMalla = await db.collection("planificacion").doc("malla_detalle").get();
+                    if (docMalla.exists) {
+                        // Intentar leer antiguos formatos si es necesario, o lanzar error
+                        if (docMalla.data().json) malla = JSON.parse(docMalla.data().json);
+                        else if (docMalla.data().malla) malla = docMalla.data().malla;
+                    }
+                }
+
+                if (!malla || malla.length === 0) console.warn("Malla vacía o no encontrada");
+
+            } catch (e) {
+                console.error("Error loading malla:", e);
+            }
+
+            // 2. Cargar Docentes (TIEMPO REAL)
+            await new Promise((resolve, reject) => {
+                const docRef = db.collection("planificacion").doc("lista_docentes");
+
+                docRef.onSnapshot((doc) => {
+                    docentes = [];
+                    if (doc.exists && doc.data().docentes) {
+                        docentes = doc.data().docentes;
+                        console.log("ACTUALIZACIÓN REALTIME: Docentes cargados/actualizados:", docentes.length);
+
+                        // NO ORDENAR: Respetar orden de carga
+
+                        // Llenar selectores (Preservando selección si es posible)
+                        const sel = document.getElementById('selectDirectoDocente');
+                        const prevVal = sel.value;
+
+                        sel.innerHTML = '<option value="">Seleccionar Docente...</option>';
+                        docentes.forEach((d, idx) => {
+                            sel.innerHTML += `<option value="${idx}">${d.nombre}</option>`;
+                        });
+
+                        if (prevVal && docentes[prevVal]) {
+                            sel.value = prevVal;
+                        }
+
+                        // Re-renderizar sidebar y lo que dependa de docentes
+                        if (docentes.length > 0) {
+                            actualizarTurnoDocente();
+                            renderCursosAsignados(); // Actualiza la lista lateral
+                            generarTablaBase();      // REGENERAR TABLA COMPLETA para evitar duplicados
+                        } else {
+                            console.warn("⚠️ No hay docentes registrados.");
+                        }
+
+                        resolve(); // Resuelve la promesa inicial (no hace nada en siguientes updates)
+                    } else {
+                        // Fallback a colección antigua si el doc nuevo no existe
+                        console.warn("Realtime: No existe lista_docentes, intentando fallback...");
+                        db.collection("docentes").get().then(snapshot => {
+                            if (!snapshot.empty) {
+                                snapshot.forEach(d => {
+                                    const da = d.data();
+                                    if (!da.id) da.id = d.id;
+                                    docentes.push(da);
+                                });
+                                // ... (Lógica de render fallback, simplificada)
+                                const sel = document.getElementById('selectDirectoDocente');
+                                sel.innerHTML = '<option value="">Seleccionar Docente...</option>';
+                                docentes.forEach((d, idx) => sel.innerHTML += `<option value="${idx}">${d.nombre}</option>`);
+                                if (docentes.length > 0) actualizarTurnoDocente();
+                            }
+                            resolve();
+                        }).catch(reject);
+                    }
+                }, (error) => {
+                    console.error("Error listening to docentes:", error);
+                    // No rechazamos tajantemente para no romper toda la app, pero loggeamos
+                    resolve();
+                });
+            });
+        }
+
+        async function cargarHorariosGuardados() {
+            try {
+                const doc = await db.collection("planificacion").doc("horarios").get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    horariosPorCiclo = data.horariosGeneral || {};
+                    // Recalcular cache de horas usadas
+                    reconstruirCacheHoras();
+                    renderBloquesEnTabla();
+                }
+            } catch (e) {
+                console.error("Error loading horarios:", e);
+            }
+        }
+
+        function reconstruirCacheHoras() {
+            hoursCache.clear();
+            Object.values(horariosPorCiclo).forEach(cicloData => {
+                Object.values(cicloData).forEach(bloques => {
+                    bloques.forEach(b => {
+                        const k = `${b.docente}|${b.codigo}|${b.subTipo}`;
+                        hoursCache.set(k, (hoursCache.get(k) || 0) + 1);
+                    });
+                });
+            });
+        }
+
+        // --- GESTIÓN DE PLANTILLA (PERSISTENCIA) ---
+        let urlPlantillaHorario = null;
+
+        // 1. Cargar estado de plantilla al inicio
+        // 1. Cargar estado de plantilla al inicio Y configurar listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            // A) Configurar Listener para subida (Ahora seguro porque el DOM existe)
+            const fileInput = document.getElementById('filePlantillaHorario');
+            if (fileInput) {
+                fileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const st = document.getElementById('statusPlantillaHorario');
+                    const btn = document.getElementById('btnDescargarPlantillaHorario');
+
+                    st.textContent = "⏳ Subiendo...";
+                    st.style.color = "#f39c12";
+
+                    const reader = new FileReader();
+                    reader.onload = async (evt) => {
+                        const base64Data = evt.target.result;
+
+                        // 1. Intentar subir a Storage con Timeout (8s)
+                        const uploadToStorage = async () => {
+                            const ref = storage.ref().child(`templates/horario_template_${Date.now()}.xlsx`);
+                            await ref.put(file);
+                            return await ref.getDownloadURL();
+                        };
+                        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
+
+                        try {
+                            st.textContent = "☁️ Subiendo a Nube...";
+                            const url = await Promise.race([uploadToStorage(), timeout]);
+
+                            // Éxito Storage
+                            await db.collection("planificacion").doc("config_horario_template").set({
+                                url: url,
+                                nombre: file.name,
+                                updated: new Date()
+                            });
+                            urlPlantillaHorario = url;
+                            st.textContent = "✅ Guardado en Nube";
+
+                        } catch (err) {
+                            console.warn("Fallo storage, intentando fallback Base64:", err);
+                            st.textContent = "💾 Guardando Local...";
+
+                            // Fallback: Guardar Base64 en Firestore
+                            try {
+                                await db.collection("planificacion").doc("config_horario_template").set({
+                                    base64: base64Data, // Guardamos el archivo directo
+                                    nombre: file.name,
+                                    updated: new Date()
+                                });
+                                urlPlantillaHorario = "BASE64";
+                                st.textContent = "✅ Guardado (Modo Local)";
+                            } catch (e2) {
+                                console.error("Fallo todo:", e2);
+                                st.textContent = "❌ Error al guardar";
+                                st.style.color = "red";
+                                alert("Error crítico: No se pudo guardar ni en nube ni en base de datos.");
+                                return;
+                            }
+                        }
+
+                        st.style.color = "var(--green)";
+                        btn.style.display = 'inline-block';
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // B) Recuperar estado inicial
+            try {
+                const doc = await db.collection("planificacion").doc("config_horario_template").get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.url || data.base64) {
+                        urlPlantillaHorario = data.url || "BASE64";
+                        const st = document.getElementById('statusPlantillaHorario');
+                        const btn = document.getElementById('btnDescargarPlantillaHorario');
+                        if (st) {
+                            st.textContent = "✅ Plantilla guardada en nube";
+                            st.style.color = "var(--green)";
+                        }
+                        if (btn) btn.style.display = 'inline-block';
+                    }
+                }
+            } catch (e) { console.error("Error check plantilla horario:", e); }
         });
-        html += `</tbody></table></div>`;
-        contenedor.innerHTML += html;
-    }
-</script>
+
+        // 3. Descargar Plantilla
+        async function descargarPlantillaHorario() {
+            if (!urlPlantillaHorario) return alert("No hay plantilla guardada.");
+
+            if (urlPlantillaHorario === "BASE64") {
+                // Fallback si fuera base64 (aunque aqui priorizamos storage)
+                const doc = await db.collection("planificacion").doc("config_horario_template").get();
+                if (doc.exists && doc.data().base64) {
+                    const link = document.createElement("a");
+                    link.href = doc.data().base64;
+                    link.download = doc.data().nombre || "Plantilla_Horario.xlsx";
+                    link.click();
+                }
+            } else {
+                window.open(urlPlantillaHorario, '_blank');
+            }
+        }
+    </script>
+
+    <!-- MODAL EXPORTAR EXCEL -->
+    <div id="modalExportar"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:25px; border-radius:10px; width:400px; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0; color:var(--blue);"><i class="fa-solid fa-file-excel"></i> Exportar Horario</h3>
+
+            <label style="font-weight:bold; display:block; margin-top:15px;">1. Plantilla Institucional (.xlsx)</label>
+            <input type="file" id="filePlantillaHorario" accept=".xlsx" style="width:100%; margin-top:5px;">
+            <small style="color:#666; display:block; margin-top:2px;">Debe tener 10 hojas (Ciclo I - X)</small>
+
+            <!-- CONTROLES DE PLANTILLA (NUEVO) -->
+            <div style="margin-top:5px; display:flex; align-items:center; gap:10px;">
+                <span id="statusPlantillaHorario" style="font-size:12px; font-weight:bold;"></span>
+                <button id="btnDescargarPlantillaHorario" onclick="descargarPlantillaHorario()"
+                    style="display:none; padding:4px 8px; font-size:11px; background:#17a2b8; color:white; border:none; border-radius:3px; cursor:pointer;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Descargar Plantilla Subida
+                </button>
+            </div>
+
+            <label style="font-weight:bold; display:block; margin-top:15px;">2. Celda de Inicio (Ejm: C10)</label>
+            <input type="text" id="startCellHorario" value="C10"
+                style="width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:4px; font-weight:bold; text-transform:uppercase;">
+            <small style="color:#666; display:block; margin-top:2px;">Primera celda de la hora (Lunes)</small>
+
+            <div style="margin-top:20px; display:flex; justify-content:end; gap:10px;">
+                <button onclick="document.getElementById('modalExportar').style.display='none'"
+                    style="padding:8px 15px; border:none; background:#ccc; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button onclick="generarExcelHorario()"
+                    style="padding:8px 15px; border:none; background:var(--green); color:white; border-radius:4px; cursor:pointer; font-weight:bold;">
+                    <i class="fa-solid fa-download"></i> Generar
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>

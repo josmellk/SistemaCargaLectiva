@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión Académica - UNAJMA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --blue: #1a3a5a;
+            --light-blue: #3498db;
+            --bg: #f4f7f9;
+            --text-color: #333;
+            --sidebar-width: 250px;
+        }
+
+        /* FontAwesome Fix for Icons */
+        .nav-icon {
+            width: 25px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--blue);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .sidebar-header p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .nav-links {
+            flex-grow: 1;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding-left: 25px;
+        }
+
+        .nav-link.active {
+            background: var(--light-blue);
+            color: white;
+            border-left: 4px solid #fff;
+        }
+
+        .nav-icon {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex-grow: 1;
+            background: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .iframe-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            /* Oculto por defecto */
+        }
+
+        .iframe-container.active {
+            display: block;
+        }
+
+        /* USER PROFILE / LOGOUT */
+        .user-profile {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #c0392b;
+        }
+    </style>
+    <script>
+        // Verificación de sesión
+        function verificarSesion() {
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("login.html");
+            }
+        }
+        verificarSesion();
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === "accesoPermitido" && !e.newValue) {
+                verificarSesion();
+            }
+        });
+
+        function logout() {
+            if (confirm("¿Seguro que deseas cerrar sesión?")) {
+                localStorage.removeItem("accesoPermitido");
+                window.location.replace("login.html");
+            }
+        }
+    </script>
+</head>
+
+<style>
+    /* ... (styles from previous context) ... */
+
+    /* RESPONSIVE STYLES */
+    .menu-toggle {
+        display: none;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 2000;
+        background: var(--blue);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 900;
+    }
+
+    @media (max-width: 768px) {
+        .menu-toggle {
+            display: block;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -260px;
+            /* Hide completely */
+            height: 100vh;
+            width: 250px;
+            transition: left 0.3s ease;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .main-content {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <nav class="sidebar" id="mainSidebar">
+        <div class="sidebar-header">
+            <h2>SISTEMA ACADÉMICO</h2>
+            <p>Gestión de Carga Docente</p>
+        </div>
+
+        <ul class="nav-links">
+            <li class="nav-item">
+                <a class="nav-link active" onclick="switchTab('tab-index', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span> Inicio (Planificador)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('tab-carga', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-chalkboard-user"></i></span> Carga Docente
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('tab-horarios', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Horarios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('tab-vista-docente', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-eye"></i></span> Vista Docente
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('tab-laboratorios', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-flask"></i></span> Laboratorios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('tab-vista-lab', this)">
+                    <span class="nav-icon"><i class="fa-solid fa-magnifying-glass"></i></span> Vista Ocupación
+                </a>
+            </li>
+        </ul>
+
+        <div class="user-profile">
+            <span>Usuario: <strong>Admin</strong></span>
+            <button class="btn-logout" onclick="logout()">Salir</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- IFRAMES -->
+        <!-- Se cargan en 'src' pero se ocultan con CSS. Esto mantiene el estado al cambiar de pestaña. -->
+        <iframe id="tab-index" src="index.html" class="iframe-container active"></iframe>
+        <iframe id="tab-carga" src="carga_docente.html" class="iframe-container"></iframe>
+        <iframe id="tab-horarios" src="horarios.html" class="iframe-container"></iframe>
+        <iframe id="tab-vista-docente" src="vista_docente.html" class="iframe-container"></iframe>
+        <iframe id="tab-laboratorios" src="laboratorios.html" class="iframe-container"></iframe>
+        <iframe id="tab-vista-lab" src="vista_laboratorios.html" class="iframe-container"></iframe>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('mainSidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+
+        function switchTab(tabId, element) {
+            // 1. Ocultar todos los iframes
+            document.querySelectorAll('.iframe-container').forEach(iframe => {
+                iframe.classList.remove('active');
+            });
+
+            // 2. Desactivar todos los links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // 3. Mostrar el iframe seleccionado
+            document.getElementById(tabId).classList.add('active');
+
+            // 4. Activar el link seleccionado
+            if (element) element.classList.add('active');
+
+            // 5. Cerrar sidebar en móvil al seleccionar
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+    </script>
+</body>
+
+</html>

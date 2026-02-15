@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +27,7 @@
             background: white;
             padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
             text-align: center;
@@ -120,80 +121,82 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="login-card">
-    <div class="logo-placeholder">🎓</div>
-    <h2>Bienvenido</h2>
-    <p>Ingresa tus credenciales para gestionar la carga docente</p>
+    <div class="login-card">
+        <div class="logo-placeholder">🎓</div>
+        <h2>Bienvenido</h2>
+        <p>Ingresa tus credenciales para gestionar la carga docente</p>
 
-    <div class="input-group">
-        <label>Usuario</label>
-        <input type="text" id="username" placeholder="Ej: admin" autocomplete="off">
+        <div class="input-group">
+            <label>Usuario</label>
+            <input type="text" id="username" placeholder="Ej: admin" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+
+        <button onclick="validarAcceso()" id="btnLogin">INGRESAR AL SISTEMA</button>
+
+        <div id="errorBox" class="error-message">
+            ⚠️ Usuario o contraseña incorrectos. Intente de nuevo.
+        </div>
+
+        <div class="footer-text">
+            Departamento Académico de Ingeniería y Tecnología Informática<br>
+            UNAJMA 2026
+        </div>
     </div>
 
-    <div class="input-group">
-        <label>Contraseña</label>
-        <input type="password" id="password" placeholder="••••••••">
-    </div>
+    <script>
+        function validarAcceso() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btnLogin');
+            const error = document.getElementById('errorBox');
 
-    <button onclick="validarAcceso()" id="btnLogin">INGRESAR AL SISTEMA</button>
+            // Desactivar botón visualmente mientras procesa
+            btn.innerText = "VERIFICANDO...";
+            btn.disabled = true;
+            error.style.display = 'none';
 
-    <div id="errorBox" class="error-message">
-        ⚠️ Usuario o contraseña incorrectos. Intente de nuevo.
-    </div>
+            setTimeout(() => {
+                // --- CREDENCIALES DE ACCESO ---
+                if (u === "admin" && p === "unajma2026") {
 
-    <div class="footer-text">
-        Departamento Académico de Ingeniería y Tecnología Informática<br>
-        UNAJMA 2026
-    </div>
-</div>
+                    // 1. MODIFICADO: Guardar en localStorage (Usa el tiempo actual como llave)
+                    localStorage.setItem("accesoPermitido", Date.now());
 
-<script>
-    function validarAcceso() {
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value.trim();
-        const btn = document.getElementById('btnLogin');
-        const error = document.getElementById('errorBox');
+                    // 2. Redirigir al dashboard usando replace para limpiar el historial
+                    window.location.replace("dashboard.html");
 
-        // Desactivar botón visualmente mientras procesa
-        btn.innerText = "VERIFICANDO...";
-        btn.disabled = true;
-        error.style.display = 'none';
-
-        setTimeout(() => {
-            // --- CREDENCIALES DE ACCESO ---
-            if (u === "admin" && p === "unajma2026") {
-                
-                // 1. MODIFICADO: Guardar en localStorage (Usa el tiempo actual como llave)
-                localStorage.setItem("accesoPermitido", Date.now());
-                
-                // 2. Redirigir al index usando replace para limpiar el historial
-                window.location.replace("index.html");
-
-            } else {
-                // Mostrar error y resetear botón
-                btn.innerText = "INGRESAR AL SISTEMA";
-                btn.disabled = false;
-                error.style.display = 'block';
-                // Limpiar password para seguridad
-                document.getElementById('password').value = "";
-            }
-        }, 600); 
-    }
-
-    // Permitir ingreso con la tecla Enter
-    document.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            validarAcceso();
+                } else {
+                    // Mostrar error y resetear botón
+                    btn.innerText = "INGRESAR AL SISTEMA";
+                    btn.disabled = false;
+                    error.style.display = 'block';
+                    // Limpiar password para seguridad
+                    document.getElementById('password').value = "";
+                }
+            }, 600);
         }
-    });
 
-    // MODIFICADO: Al cargar el login, nos aseguramos de que no haya sesiones viejas
-    window.onload = () => {
-        localStorage.removeItem("accesoPermitido");
-    };
-</script>
+        // Permitir ingreso con la tecla Enter
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                validarAcceso();
+            }
+        });
+
+        // MODIFICADO: Al cargar el login, nos aseguramos de que no haya sesiones viejas
+        window.onload = () => {
+            localStorage.removeItem("accesoPermitido");
+        };
+    </script>
 
 </body>
+
 </html>
