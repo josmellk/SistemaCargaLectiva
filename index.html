@@ -4,199 +4,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso - Sistema Académico DAITI</title>
+    <title>DAITI UNAJMA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --blue: #1a3a5a;
-            --light-blue: #3498db;
-            --bg: #f4f7f9;
-            --red: #e74c3c;
+            --primary: #5D0E16;
+            /* Institutional Maroon */
+            --primary-glow: rgba(93, 14, 22, 0.4);
+            --accent: #B8860B;
+            /* Institutional Gold */
+            --accent-glow: rgba(184, 134, 11, 0.4);
+            --bg-dark: #0a0101;
+            --card-bg: rgba(18, 5, 5, 0.7);
+            --glass-border: rgba(184, 134, 11, 0.15);
+            --text-main: #fcfcfc;
+            --text-dim: #d1b8b8;
+            --error: #ff4d4d;
+            --transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: default;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg);
-            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
         }
 
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        /* Animated Mesh Gradient Background - Maroon & Gold Harmony */
+        .mesh-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border-top: 5px solid var(--blue);
+            height: 100%;
+            z-index: -2;
+            background:
+                radial-gradient(at 0% 0%, hsla(350, 80%, 10%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(20, 50%, 5%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(355, 70%, 12%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 50%, hsla(0, 40%, 3%, 1) 0, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(350, 60%, 8%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(45, 80%, 5%, 1) 0, transparent 50%);
+            filter: blur(30px);
+            animation: gradientShift 20s ease-in-out infinite alternate;
         }
 
-        .logo-placeholder {
-            font-size: 50px;
-            margin-bottom: 10px;
+        @keyframes gradientShift {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.1) rotate(1deg);
+            }
+        }
+
+        /* Floating Gold Dust Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0.15;
+            filter: blur(1px);
+            animation: float 18s linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-100vh) translateX(30px);
+                opacity: 0;
+            }
+        }
+
+        /* Login Card */
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            padding: 55px 48px;
+            border-radius: 40px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.9),
+                inset 0 1px 1px rgba(184, 134, 11, 0.2);
+            position: relative;
+            animation: cardEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes cardEntrance {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Enhanced Logo Area with Shield */
+        .logo-box {
+            margin-bottom: 35px;
+            text-align: center;
+        }
+
+        .shield-img {
+            width: 130px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(184, 134, 11, 0.3));
+            animation: logoEnter 1.5s cubic-bezier(0.2, 1, 0.3, 1), logoBreathe 4s ease-in-out infinite;
+        }
+
+        @keyframes logoEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.5) rotate(-10deg);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0);
+            }
+        }
+
+        @keyframes logoBreathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(184, 134, 11, 0.3));
+            }
+
+            50% {
+                transform: scale(1.03);
+                filter: drop-shadow(0 0 35px rgba(184, 134, 11, 0.5));
+            }
         }
 
         h2 {
-            color: var(--blue);
-            margin-bottom: 5px;
-            font-size: 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin-top: 5px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 30px;
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-top: 5px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.8;
         }
 
+        /* Floating Input System */
         .input-group {
+            position: relative;
+            margin-bottom: 25px;
             text-align: left;
-            margin-bottom: 20px;
         }
 
-        label {
-            display: block;
-            font-size: 12px;
-            font-weight: bold;
-            color: var(--blue);
-            margin-bottom: 5px;
+        .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px 52px 12px 52px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .input-label {
+            position: absolute;
+            left: 52px;
+            top: 22px;
+            color: var(--text-dim);
+            font-size: 14px;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .input-field:focus,
+        .input-field:not(:placeholder-shown) {
+            background: rgba(139, 0, 0, 0.05);
+            border-color: var(--accent);
+            box-shadow: 0 0 25px rgba(184, 134, 11, 0.1);
+        }
+
+        .input-field:focus~.input-label,
+        .input-field:not(:placeholder-shown)~.input-label {
+            top: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--accent);
             text-transform: uppercase;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            outline: none;
-            transition: all 0.3s;
-            font-size: 16px;
+        .input-icon {
+            position: absolute;
+            left: 20px;
+            top: 24px;
+            font-size: 20px;
+            color: var(--accent);
+            opacity: 0.7;
+            transition: var(--transition);
         }
 
-        input:focus {
-            border-color: var(--light-blue);
-            box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+        .input-field:focus~.input-icon {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--blue);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+        .toggle-pwd {
+            position: absolute;
+            right: 20px;
+            top: 24px;
+            color: var(--text-dim);
             cursor: pointer;
-            transition: background 0.3s;
+            padding: 4px;
+            transition: var(--transition);
+        }
+
+        /* Institutional Gold Button */
+        .btn-submit {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--accent), #8B6914);
+            color: #000;
+            /* Contrast on gold */
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            box-shadow: 0 12px 24px -12px var(--accent-glow);
+            margin-top: 15px;
+        }
+
+        .btn-submit::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -100%;
+            width: 70%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: rotate(30deg);
+            transition: 0.8s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-submit:hover::after {
+            left: 150%;
+        }
+
+        /* Advanced Error HUD */
+        .error-hud {
+            background: rgba(139, 0, 0, 0.15);
+            color: var(--error);
+            border: 1px solid rgba(139, 0, 0, 0.3);
+            padding: 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 30px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.1);
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0);
+            }
+
+            20% {
+                transform: translate(-3px, 3px);
+            }
+
+            40% {
+                transform: translate(-3px, -3px);
+            }
+
+            60% {
+                transform: translate(3px, 3px);
+            }
+
+            80% {
+                transform: translate(3px, -3px);
+            }
+
+            100% {
+                transform: translate(0);
+            }
+        }
+
+        .footer {
+            margin-top: 45px;
+            font-size: 12px;
+            color: var(--text-dim);
+            border-top: 1px solid var(--glass-border);
+            padding-top: 25px;
+            text-align: center;
+        }
+
+        .footer h4 {
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 800;
             margin-top: 10px;
         }
 
-        button:hover {
-            background: #234d75;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        .error-message {
-            background: #fdedec;
-            color: var(--red);
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            margin-top: 20px;
+        /* Performance Optimized Loader */
+        .loader-ring {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid #000;
+            border-radius: 50%;
+            animation: rotate 0.8s linear infinite;
             display: none;
-            border: 1px solid var(--red);
+            margin: 0 auto;
         }
 
-        .footer-text {
-            margin-top: 30px;
-            font-size: 11px;
-            color: #aaa;
+        @keyframes rotate {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
 
+    <div class="mesh-gradient"></div>
+    <div class="particles" id="particleContainer"></div>
+
     <div class="login-card">
-        <div class="logo-placeholder">🎓</div>
-        <h2>Bienvenido</h2>
-        <p>Ingresa tus credenciales para gestionar la carga docente</p>
-
-        <div class="input-group">
-            <label>Usuario</label>
-            <input type="text" id="username" placeholder="Ej: admin" autocomplete="off">
+        <div class="logo-box">
+            <img src="escudo_daiti.png" alt="Escudo DAITI" class="shield-img">
+            <h2>DAITI</h2>
+            <p class="subtitle">Sistema Académico</p>
         </div>
 
         <div class="input-group">
-            <label>Contraseña</label>
-            <input type="password" id="password" placeholder="••••••••">
+            <i class="fas fa-user-shield input-icon"></i>
+            <input type="text" id="username" class="input-field" placeholder=" " autocomplete="off">
+            <label class="input-label">Usuario de Red</label>
         </div>
 
-        <button onclick="validarAcceso()" id="btnLogin">INGRESAR AL SISTEMA</button>
-
-        <div id="errorBox" class="error-message">
-            ⚠️ Usuario o contraseña incorrectos. Intente de nuevo.
+        <div class="input-group">
+            <i class="fas fa-key input-icon"></i>
+            <input type="password" id="password" class="input-field" placeholder=" " autocomplete="off">
+            <label class="input-label">Contraseña de Acceso</label>
+            <i class="fas fa-eye toggle-pwd" id="eyeToggle" onclick="togglePassword()"></i>
         </div>
 
-        <div class="footer-text">
-            Departamento Académico de Ingeniería y Tecnología Informática<br>
-            UNAJMA 2026
+        <button class="btn-submit" onclick="validarAcceso()" id="btnSubmit">
+            <span id="btnText">INGRESAR AL SISTEMA</span>
+            <div class="loader-ring" id="btnLoader"></div>
+        </button>
+
+        <div class="error-hud" id="errorBox">
+            <i class="fas fa-lock"></i>
+            <span>ACCESO DENEGADO: Credenciales Invalidas</span>
+        </div>
+
+        <div class="footer">
+            Universidad Nacional José María Arguedas<br>
+            <h4 align="center">DAITI</h4>
         </div>
     </div>
 
     <script>
+        // Immersive Background Particles (Gold Dust)
+        const container = document.getElementById('particleContainer');
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.top = Math.random() * 100 + 'vh';
+            p.style.width = p.style.height = Math.random() * 3 + 1 + 'px';
+            p.style.animationDuration = Math.random() * 8 + 10 + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            container.appendChild(p);
+        }
+
+        function togglePassword() {
+            const up = document.getElementById('password');
+            const icon = document.getElementById('eyeToggle');
+            if (up.type === 'password') {
+                up.type = 'text';
+                icon.className = 'fas fa-eye-slash toggle-pwd';
+            } else {
+                up.type = 'password';
+                icon.className = 'fas fa-eye toggle-pwd';
+            }
+        }
+
         function validarAcceso() {
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value.trim();
-            const btn = document.getElementById('btnLogin');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
             const error = document.getElementById('errorBox');
+            const btn = document.getElementById('btnSubmit');
 
-            // Desactivar botón visualmente mientras procesa
-            btn.innerText = "VERIFICANDO...";
-            btn.disabled = true;
             error.style.display = 'none';
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'block';
+            btn.disabled = true;
 
             setTimeout(() => {
-                // --- CREDENCIALES DE ACCESO ---
                 if (u === "admin" && p === "unajma2026") {
-
-                    // 1. MODIFICADO: Guardar en localStorage (Usa el tiempo actual como llave)
                     localStorage.setItem("accesoPermitido", Date.now());
-
-                    // 2. Redirigir al dashboard usando replace para limpiar el historial
                     window.location.replace("dashboard.html");
-
                 } else {
-                    // Mostrar error y resetear botón
-                    btn.innerText = "INGRESAR AL SISTEMA";
+                    btnText.style.display = 'block';
+                    btnLoader.style.display = 'none';
                     btn.disabled = false;
-                    error.style.display = 'block';
-                    // Limpiar password para seguridad
+                    error.style.display = 'flex';
                     document.getElementById('password').value = "";
                 }
-            }, 600);
+            }, 1500);
         }
 
-        // Permitir ingreso con la tecla Enter
-        document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                validarAcceso();
-            }
-        });
-
-        // MODIFICADO: Al cargar el login, nos aseguramos de que no haya sesiones viejas
-        window.onload = () => {
-            localStorage.removeItem("accesoPermitido");
-        };
+        document.addEventListener('keypress', (e) => { if (e.key === 'Enter') validarAcceso(); });
+        window.onload = () => localStorage.removeItem("accesoPermitido");
     </script>
-
 </body>
 
 </html>

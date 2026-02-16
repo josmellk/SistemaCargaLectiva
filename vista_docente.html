@@ -23,7 +23,8 @@
     <style>
         /* COPIED FROM HORARIOS.HTML */
         :root {
-            --blue: #1a3a5a;
+            --blue: #5D0E16;
+            /* Dark Maroon */
             --bg: #f8f9fa;
             --border: #cbd5e0;
             --red: #e53e3e;
@@ -337,7 +338,8 @@
             <select id="selectDocente" class="docente-selector" onchange="renderHorarioDocente()">
                 <option value="">-- SELECCIONE DOCENTE --</option>
             </select>
-            <button onclick="window.print()" class="no-print btn-print"><i class="fa-solid fa-print"></i>
+            <button onclick="window.print()" class="no-print btn-print" style="background:#8B0000;"><i
+                    class="fa-solid fa-print"></i>
                 Imprimir</button>
             <button onclick="imprimirTodos()" class="no-print btn-print" style="background:var(--blue);"><i
                     class="fa-solid fa-copy"></i>
@@ -487,7 +489,7 @@
             docentes.forEach(doc => {
                 const tableHTML = `
                 <div class="print-page">
-                    <h2 style="text-align:center; color:#1a3a5a; margin-bottom:5px; font-size:16px; border-bottom: 2px solid #1a3a5a; padding-bottom:5px;">
+                    <h2 style="text-align:center; color:#5D0E16; margin-bottom:5px; font-size:16px; border-bottom: 2px solid #5D0E16; padding-bottom:5px;">
                         <i class="fa-solid fa-chalkboard-user"></i> ${doc.nombre}
                     </h2>
                     <table class="schedule-table">

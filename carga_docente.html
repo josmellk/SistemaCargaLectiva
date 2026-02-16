@@ -30,13 +30,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
     <style>
         :root {
-            --blue: #1a3a5a;
-            --light-blue: #3498db;
+            --primary: #5D0E16;
+            --blue: #5D0E16;
+            --light-blue: #B8860B;
+            /* Institutional Gold */
             --green: #27ae60;
             --purple: #8e44ad;
-            --orange: #f39c12;
+            --orange: #e67e22;
             --bg: #f4f7f9;
             --red: #e74c3c;
+            --glass-border: rgba(0, 0, 0, 0.1);
         }
 
         body {
@@ -50,8 +53,8 @@
 
         .sidebar {
             width: 400px;
-            background: white;
-            border-right: 2px solid #ddd;
+            background: #fff;
+            border-right: 2px solid var(--glass-border);
             display: flex;
             flex-direction: column;
         }
@@ -195,14 +198,14 @@
         }
 
         .controls {
-            background: white;
+            background: #fff;
             padding: 15px 25px;
             border-bottom: 1px solid #ddd;
             margin-bottom: 0;
             display: flex;
             gap: 10px;
             align-items: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             flex-wrap: wrap;
             position: sticky;
             top: 0;
@@ -218,14 +221,15 @@
         }
 
         .docente-container {
-            background: white;
-            border-radius: 8px;
+            background: #fff;
+            border-radius: 12px;
             padding: 15px;
             min-height: 120px;
-            transition: border-color 0.2s ease;
-            border: 2px solid #ccc;
-            border-top: 5px solid var(--light-blue);
+            transition: var(--transition);
+            border: 2px solid #b0bec5;
+            border-top: 5px solid var(--blue);
             position: relative;
+            color: #333;
         }
 
         .docente-container:hover {
@@ -293,14 +297,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #f8f9fa;
+            background: #fff;
             padding: 10px;
             margin-bottom: 5px;
-            border-radius: 4px;
+            border-radius: 8px;
+            border: 1px solid #cfd8dc;
             border-left: 4px solid var(--blue);
             font-size: 11px;
             cursor: grab;
             position: relative;
+            color: #333;
         }
 
         .item-details {
@@ -374,7 +380,7 @@
         }
 
         .btn-process {
-            background: var(--light-blue);
+            background: var(--blue);
             color: white;
             border: none;
             padding: 8px 12px;
@@ -673,9 +679,9 @@
         .btn-toggle {
             flex: 1;
             padding: 10px 5px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.2);
-            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            color: #666;
             border-radius: 6px;
             cursor: pointer;
             font-weight: normal;
@@ -713,7 +719,7 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">
+        <div class="sidebar-header" style="background: var(--blue); color: white;">
             <h3 style="margin:0"><i class="fa-solid fa-layer-group"></i> Asignación por Grupos</h3>
             <div style="margin-top:10px;">
                 <label style="font-size: 11px; opacity: 0.9;">Modo de Asignación:</label>

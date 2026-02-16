@@ -40,7 +40,8 @@
         }
 
         :root {
-            --blue: #1a3a5a;
+            --blue: #5D0E16;
+            /* Dark Maroon */
             --bg: #f8f9fa;
             --border: #cbd5e0;
             --red: #e53e3e;
@@ -568,7 +569,7 @@
             }
 
             .schedule-table th {
-                background-color: #3182ce !important;
+                background-color: #5D0E16 !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -684,6 +685,31 @@
                 font-size: 11px;
             }
         }
+
+        /* Institutional Select Styles */
+        select {
+            border: 2px solid var(--blue);
+            border-radius: 8px;
+            padding: 8px;
+            font-weight: bold;
+            color: var(--blue);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            accent-color: var(--blue);
+        }
+
+        select:focus {
+            box-shadow: 0 0 0 3px rgba(93, 14, 22, 0.2);
+            border-color: var(--blue);
+        }
+
+        select option {
+            font-weight: normal;
+            color: #333;
+            padding: 10px;
+        }
     </style>
 </head>
 
@@ -714,8 +740,7 @@
                 </div>
             </div>
             <div class="filter-group" style="padding: 10px;">
-                <select id="filtroCicloDocente" onchange="sincronizarYRender()"
-                    style="width:100%; padding:8px; border-radius:8px; border:2px solid var(--blue); font-weight:bold;"></select>
+                <select id="filtroCicloDocente" onchange="sincronizarYRender()" style="width:100%;"></select>
             </div>
             <div class="assigned-list" id="listaParaArrastrar"></div>
             <div class="save-container">
@@ -1077,6 +1102,19 @@
                 tr.innerHTML = `<td class="hour-cell">${h}</td>` + [1, 2, 3, 4, 5, 6].map(d => `<td ondrop="drop(event, ${rI}, ${d})" ondragover="allowDrop(event)"><div class="diagonal-container" id="cell-${rI}-${d}"></div></td>`).join("");
                 fragment.appendChild(tr);
             });
+
+            // Row for Days Header (BOTTOM)
+            const trHeaderBottom = document.createElement('tr');
+            trHeaderBottom.innerHTML = `
+                <th class="hour-cell" style="background:var(--blue); color:white;">HORA</th>
+                <th style="background:var(--blue); color:white;">LUNES</th>
+                <th style="background:var(--blue); color:white;">MARTES</th>
+                <th style="background:var(--blue); color:white;">MIÉRCOLES</th>
+                <th style="background:var(--blue); color:white;">JUEVES</th>
+                <th style="background:var(--blue); color:white;">VIERNES</th>
+                <th style="background:var(--blue); color:white;">SÁBADO</th>
+            `;
+            fragment.appendChild(trHeaderBottom);
 
             cuerpo.appendChild(fragment);
 

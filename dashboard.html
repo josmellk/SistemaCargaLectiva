@@ -4,112 +4,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión Académica - UNAJMA</title>
+    <title>Sistema Académico - UNAJMA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --blue: #1a3a5a;
-            --light-blue: #3498db;
-            --bg: #f4f7f9;
-            --text-color: #333;
-            --sidebar-width: 250px;
+            --primary: #5D0E16;
+            /* Institutional Maroon (darker) */
+            --primary-light: #7A121D;
+            --accent: #B8860B;
+            /* Institutional Gold */
+            --bg-dark: #0a0101;
+            --sidebar-bg: rgba(18, 5, 5, 0.85);
+            --content-bg: #fdfdfd;
+            --text-main: #2d1b1b;
+            --text-light: #fcfcfc;
+            --text-dim: #d1b8b8;
+            --sidebar-width: 280px;
+            --transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
         }
 
-        /* FontAwesome Fix for Icons */
-        .nav-icon {
-            width: 25px;
-            text-align: center;
-            display: inline-block;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
             height: 100vh;
+            display: flex;
             overflow: hidden;
-            background: var(--bg);
+            color: var(--text-main);
         }
 
-        /* SIDEBAR */
+        /* Animated Mesh Gradient - Very Subtle for Dashboard */
+        .mesh-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(at 0% 0%, hsla(350, 80%, 8%, 1) 0, transparent 40%),
+                radial-gradient(at 100% 100%, hsla(45, 80%, 4%, 1) 0, transparent 40%);
+            opacity: 0.8;
+        }
+
+        /* SIDEBAR - Glassmorphism Elite */
         .sidebar {
             width: var(--sidebar-width);
-            background: var(--blue);
-            color: white;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-right: 1px solid rgba(184, 134, 11, 0.15);
+            color: var(--text-light);
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            transition: var(--transition);
         }
 
         .sidebar-header {
-            padding: 20px;
+            padding: 40px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(184, 134, 11, 0.1);
+        }
+
+        .sidebar-logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(184, 134, 11, 0.3));
         }
 
         .sidebar-header h2 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .sidebar-header p {
-            margin: 5px 0 0;
-            font-size: 12px;
-            opacity: 0.7;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            font-weight: 700;
+            margin-top: 5px;
+            opacity: 0.8;
         }
 
         .nav-links {
             flex-grow: 1;
             list-style: none;
-            padding: 0;
-            margin: 0;
+            padding: 20px 15px;
             overflow-y: auto;
         }
 
         .nav-item {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 8px;
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 15px 20px;
-            color: rgba(255, 255, 255, 0.8);
+            padding: 14px 18px;
+            color: var(--text-dim);
             text-decoration: none;
-            transition: all 0.3s;
+            border-radius: 12px;
+            transition: var(--transition);
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            position: relative;
         }
 
         .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            padding-left: 25px;
+            background: rgba(139, 0, 0, 0.2);
+            color: #fff;
+            transform: translateX(5px);
         }
 
         .nav-link.active {
-            background: var(--light-blue);
-            color: white;
-            border-left: 4px solid #fff;
+            background: linear-gradient(135deg, var(--primary), #600000);
+            color: #fff;
+            box-shadow: 0 8px 20px -8px rgba(139, 0, 0, 0.5);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 20%;
+            height: 60%;
+            width: 4px;
+            background: var(--accent);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 10px var(--accent);
         }
 
         .nav-icon {
-            margin-right: 10px;
+            margin-right: 14px;
             font-size: 18px;
-            width: 25px;
+            width: 24px;
             text-align: center;
+            color: var(--accent);
+        }
+
+        .nav-link.active .nav-icon {
+            color: #fff;
         }
 
         /* MAIN CONTENT */
         .main-content {
             flex-grow: 1;
-            background: white;
+            background: var(--content-bg);
             position: relative;
             display: flex;
             flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
         }
 
         .iframe-container {
@@ -118,177 +180,181 @@
             height: 100%;
             border: none;
             display: none;
-            /* Oculto por defecto */
         }
 
         .iframe-container.active {
             display: block;
+            animation: contentFade 0.6s ease-out;
         }
 
-        /* USER PROFILE / LOGOUT */
+        @keyframes contentFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* USER PROFILE */
         .user-profile {
-            padding: 15px 20px;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 13px;
+            border-top: 1px solid rgba(184, 134, 11, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-dim);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--accent);
+            color: #fff;
         }
 
         .btn-logout {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 14px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            font-weight: 700;
+            font-size: 12px;
+            transition: var(--transition);
         }
 
         .btn-logout:hover {
-            background: #c0392b;
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* RESPONSIVE */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                height: 100vh;
+            }
+
+            .sidebar.active {
+                left: 0;
+                box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(5px);
+                z-index: 900;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
         }
     </style>
-    <script>
-        // Verificación de sesión
-        function verificarSesion() {
-            if (!localStorage.getItem("accesoPermitido")) {
-                window.location.replace("index.html");
-            }
-        }
-        verificarSesion();
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === "accesoPermitido" && !e.newValue) {
-                verificarSesion();
-            }
-        });
-
-        function logout() {
-            if (confirm("¿Seguro que deseas cerrar sesión?")) {
-                localStorage.removeItem("accesoPermitido");
-                window.location.replace("index.html");
-            }
-        }
-    </script>
-</head>
-
-<style>
-    /* ... (styles from previous context) ... */
-
-    /* RESPONSIVE STYLES */
-    .menu-toggle {
-        display: none;
-        position: fixed;
-        top: 15px;
-        left: 15px;
-        z-index: 2000;
-        background: var(--blue);
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 900;
-    }
-
-    @media (max-width: 768px) {
-        .menu-toggle {
-            display: block;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -260px;
-            /* Hide completely */
-            height: 100vh;
-            width: 250px;
-            transition: left 0.3s ease;
-        }
-
-        .sidebar.active {
-            left: 0;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        .main-content {
-            width: 100%;
-        }
-    }
-</style>
 </head>
 
 <body>
+    <div class="mesh-bg"></div>
 
     <button class="menu-toggle" onclick="toggleSidebar()">
         <i class="fa-solid fa-bars"></i>
     </button>
+
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <nav class="sidebar" id="mainSidebar">
         <div class="sidebar-header">
+            <img src="escudo_daiti.png" alt="UNAJMA" class="sidebar-logo">
             <h2>SISTEMA ACADÉMICO</h2>
-            <p>Gestión de Carga Docente</p>
+            <p>Innovación Tecnológica</p>
         </div>
 
         <ul class="nav-links">
             <li class="nav-item">
                 <a class="nav-link active" onclick="switchTab('tab-index', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span> Inicio (Planificador)
+                    <span class="nav-icon"><i class="fa-solid fa-house-chimney-window"></i></span> Inicio
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('tab-carga', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-chalkboard-user"></i></span> Carga Docente
+                    <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span> Carga Docente
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('tab-horarios', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Horarios
+                    <span class="nav-icon"><i class="fa-solid fa-calendar-check"></i></span> Horarios
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('tab-vista-docente', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-eye"></i></span> Vista Docente
+                    <span class="nav-icon"><i class="fa-solid fa-chalkboard-user"></i></span> Vista Docente
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('tab-laboratorios', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-flask"></i></span> Laboratorios
+                    <span class="nav-icon"><i class="fa-solid fa-microscope"></i></span> Laboratorios
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('tab-vista-lab', this)">
-                    <span class="nav-icon"><i class="fa-solid fa-magnifying-glass"></i></span> Vista Ocupación
+                    <span class="nav-icon"><i class="fa-solid fa-door-open"></i></span> Ocupación Lab
                 </a>
             </li>
         </ul>
 
         <div class="user-profile">
-            <span>Usuario: <strong>Admin</strong></span>
+            <div class="user-info">
+                <div class="user-avatar">AD</div>
+                <span><strong>Admin</strong></span>
+            </div>
             <button class="btn-logout" onclick="logout()">Salir</button>
         </div>
     </nav>
 
     <div class="main-content">
-        <!-- IFRAMES -->
-        <!-- Se cargan en 'src' pero se ocultan con CSS. Esto mantiene el estado al cambiar de pestaña. -->
         <iframe id="tab-index" src="planificador.html" class="iframe-container active"></iframe>
         <iframe id="tab-carga" src="carga_docente.html" class="iframe-container"></iframe>
         <iframe id="tab-horarios" src="horarios.html" class="iframe-container"></iframe>
@@ -298,32 +364,34 @@
     </div>
 
     <script>
+        // Verificación de sesión
+        function verificarSesion() {
+            if (!localStorage.getItem("accesoPermitido")) {
+                window.location.replace("index.html");
+            }
+        }
+        verificarSesion();
+
+        function logout() {
+            if (confirm("¿Seguro que deseas cerrar sesión?")) {
+                localStorage.removeItem("accesoPermitido");
+                window.location.replace("index.html");
+            }
+        }
+
         function toggleSidebar() {
             document.getElementById('mainSidebar').classList.toggle('active');
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
         function switchTab(tabId, element) {
-            // 1. Ocultar todos los iframes
-            document.querySelectorAll('.iframe-container').forEach(iframe => {
-                iframe.classList.remove('active');
-            });
+            document.querySelectorAll('.iframe-container').forEach(iframe => iframe.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-            // 2. Desactivar todos los links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            // 3. Mostrar el iframe seleccionado
             document.getElementById(tabId).classList.add('active');
-
-            // 4. Activar el link seleccionado
             if (element) element.classList.add('active');
 
-            // 5. Cerrar sidebar en móvil al seleccionar
-            if (window.innerWidth <= 768) {
-                toggleSidebar();
-            }
+            if (window.innerWidth <= 992) toggleSidebar();
         }
     </script>
 </body>

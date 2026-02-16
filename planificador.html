@@ -28,8 +28,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --blue: #1a3a5a;
-            --light-blue: #3498db;
+            --blue: #5D0E16;
+            /* Institutional Dark Maroon */
+            --light-blue: #B8860B;
+            /* Institutional Gold */
             --green: #27ae60;
             --orange: #e67e22;
             --purple: #8e44ad;
@@ -214,7 +216,7 @@
             width: 100%;
             padding: 8px;
             /* Reduced padding */
-            background: var(--light-blue);
+            background: var(--blue);
             color: white;
             border: none;
             border-radius: 6px;
@@ -440,7 +442,7 @@
                             style="display:none; margin-top:5px; padding:5px 10px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Eliminar
                             memoria</button>
                         <button onclick="descargarMalla()" id="btnDescargarMalla"
-                            style="display:none; margin-top:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
+                            style="display:none; margin-top:5px; padding:5px 10px; background:var(--blue); color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
                             <i class="fa-solid fa-download"></i> Descargar</button>
                     </div>
                     <div>
@@ -448,7 +450,7 @@
                         <input type="file" id="notasFile" accept=".xlsx,.xls">
                         <span class="file-status file-pending" id="statusNotas">Pendiente</span>
                         <button onclick="descargarNotas()" id="btnDescargarNotas"
-                            style="display:none; margin-top:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
+                            style="display:none; margin-top:5px; padding:5px 10px; background:var(--blue); color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">
                             <i class="fa-solid fa-download"></i> Descargar</button>
                     </div>
                     <div><label>Ingresantes</label><input type="number" id="ingresantes" value="40" class="small-box">
