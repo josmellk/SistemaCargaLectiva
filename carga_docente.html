@@ -1434,13 +1434,17 @@
             showToast("Docente añadido.", "success");
         }
 
-        function limpiarSoloCargas() {
-            if (confirm("¿ESTÁ SEGURO? Esto eliminará todos los cursos asignados a TODOS los docentes.")) {
+        async function limpiarSoloCargas() {
+            if (confirm("¿ESTÁ SEGURO? Esto eliminará todos los cursos asignados a TODOS los docentes y limpiará el horario general.")) {
                 docentes.forEach(d => d.carga = []);
                 renderDocentes();
                 renderCursos();
                 scheduleSave();
-                showToast("Se han limpiado todas las cargas.", "success");
+
+                // Sincronizar: Limpiar horario general
+                await clearAllSchedules();
+
+                showToast("Se han limpiado todas las cargas y el horario.", "success");
             }
         }
 
@@ -1493,6 +1497,19 @@
                 }
             } catch (e) {
                 console.error("Error cargando config nube:", e);
+            }
+        }
+
+        async function clearAllSchedules() {
+            try {
+                const horRef = db.collection("planificacion").doc("horarios");
+                await horRef.update({
+                    horariosGeneral: {},
+                    ultimaActualizacion: new Date()
+                });
+                console.log("🧹 Horario general limpiado en Firestore.");
+            } catch (e) {
+                console.error("Error al limpiar horario general:", e);
             }
         }
 
