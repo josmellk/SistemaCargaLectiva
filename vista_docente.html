@@ -462,14 +462,15 @@
                         const tagTipo = ocupacion.tipo === 'HT' ? '<span class="tag-tipo tag-ht">TEORÍA</span>' : '<span class="tag-tipo tag-hp">PRÁCTICA</span>';
                         const tagLab = ocupacion.lab ? `<div class="tag-lab">📍 ${ocupacion.lab}</div>` : '';
 
+                        const cursoSinCiclo = ocupacion.curso.replace(/^\[C-[IXV\?]+\]\s*/i, '');
                         row += `<td>
-                            <div class="dropped-course" style="background-color: ${colorDocente};">
-                                <span class="docente-name-cell">CICLO ${ocupacion.ciclo}</span>
-                                <strong>${ocupacion.curso}</strong>
-                                ${tagTipo}
-                                ${tagLab}
-                            </div>
-                        </td>`;
+                             <div class="dropped-course" style="background-color: ${colorDocente};">
+                                 <span class="docente-name-cell">CICLO ${ocupacion.ciclo}</span>
+                                 <strong>[${ocupacion.codigo}] ${cursoSinCiclo}</strong>
+                                 ${tagTipo}
+                                 ${tagLab}
+                             </div>
+                         </td>`;
                     } else {
                         row += `<td></td>`;
                     }
@@ -557,6 +558,7 @@
                             encontrado = {
                                 ciclo: ciclo,
                                 curso: b.curso,
+                                codigo: b.codigo,
                                 tipo: b.subTipo || b.tipo,
                                 lab: b.lab || null
                             };

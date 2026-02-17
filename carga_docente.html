@@ -1370,11 +1370,16 @@
         function editarDocente(docId) {
             const doc = docentes.find(d => d.id == docId);
             if (!doc) return;
+            const oldName = doc.nombre;
             const nuevoNombre = prompt("Editar nombre:", doc.nombre);
-            if (nuevoNombre) {
-                doc.nombre = nuevoNombre.toUpperCase().trim();
+            if (nuevoNombre && nuevoNombre.toUpperCase().trim() !== oldName) {
+                const updatedName = nuevoNombre.toUpperCase().trim();
+                doc.nombre = updatedName;
                 updateDocenteCard(docId);
                 scheduleSave();
+
+                // Sincronizar nombre en horarios
+                renameDocenteInSchedules(oldName, updatedName);
             }
         }
 
@@ -1491,6 +1496,39 @@
             }
         }
 
+        async function renameDocenteInSchedules(oldName, newName) {
+            try {
+                const horRef = db.collection("planificacion").doc("horarios");
+                const docSnap = await horRef.get();
+                if (!docSnap.exists) return;
+
+                let horarios = docSnap.data().horariosGeneral || {};
+                let changed = false;
+
+                const cleanOld = oldName.toString().trim();
+                const cleanNew = newName.toString().trim();
+
+                Object.keys(horarios).forEach(ciclo => {
+                    Object.keys(horarios[ciclo]).forEach(blockKey => {
+                        horarios[ciclo][blockKey].forEach(item => {
+                            if ((item.docente || "").toString().trim() === cleanOld) {
+                                item.docente = cleanNew;
+                                changed = true;
+                            }
+                        });
+                    });
+                });
+
+                if (changed) {
+                    await horRef.update({ horariosGeneral: horarios, ultimaActualizacion: new Date() });
+                    console.log(`📝 Nombre actualizado en horarios: ${oldName} -> ${newName}`);
+                    showToast("Nombre sincronizado en horarios.", "info");
+                }
+            } catch (e) {
+                console.error("Error al renombrar docente en horarios:", e);
+            }
+        }
+
         async function cleanScheduleForDocente(docName, courseCode = null) {
             try {
                 const horRef = db.collection("planificacion").doc("horarios");
@@ -1502,12 +1540,10 @@
 
                 Object.keys(horarios).forEach(ciclo => {
                     Object.keys(horarios[ciclo]).forEach(blockKey => {
-                        // Filtrar bloques que NO sean del docente/curso a eliminar
                         const originalLen = horarios[ciclo][blockKey].length;
                         horarios[ciclo][blockKey] = horarios[ciclo][blockKey].filter(item => {
-                            const matchDoc = item.docente === docName;
-                            const matchCourse = courseCode ? item.codigo === courseCode : true;
-                            // Si coincide docente Y curso (o todo si curso es null), SE BORRA (return false)
+                            const matchDoc = (item.docente || "").toString().trim() === docName.toString().trim();
+                            const matchCourse = courseCode ? (item.codigo || "").toString().trim() === courseCode.toString().trim() : true;
                             return !(matchDoc && matchCourse);
                         });
 

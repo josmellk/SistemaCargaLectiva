@@ -1161,7 +1161,8 @@
                         b.className = 'dropped-course' + isCompact;
                         b.style.backgroundColor = getColorPorDocente(nombreAMostrar);
 
-                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
+                        const cursoSinCiclo = inf.curso.replace(/^\[C-[IXV\?]+\]\s*/i, '');
+                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${k}', ${idx})">✕</button><strong>[${inf.codigo}] ${cursoSinCiclo}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
                         blockFrag.appendChild(b);
                     });
                     cont.appendChild(blockFrag);
@@ -1361,7 +1362,8 @@
                         b.className = 'dropped-course' + isCompact;
                         b.style.backgroundColor = getColorPorDocente(nombreAMostrar);
 
-                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${key}', ${idx})">✕</button><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
+                        const cursoSinCiclo = inf.curso.replace(/^\[C-[IXV\?]+\]\s*/i, '');
+                        b.innerHTML = `<button class="btn-remove" onclick="quitar('${key}', ${idx})">✕</button><strong>[${inf.codigo}] ${cursoSinCiclo}</strong><span class="docente-name-cell">${nombreAMostrar}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span>`;
                         blockFrag.appendChild(b);
                     } catch (innerErr) {
                         console.error("Error rendering item in cell:", innerErr, inf);
@@ -1436,7 +1438,8 @@
             d.style.borderLeftColor = col;
             d.draggable = true;
 
-            d.innerHTML = `<span style="background:${tip === 'HT' ? '#ed8936' : '#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span><strong>${res}h</strong>${it.nombre}`;
+            const cursoSinCiclo = it.nombre.replace(/^\[C-[IXV\?]+\]\s*/i, '');
+            d.innerHTML = `<span style="background:${tip === 'HT' ? '#ed8936' : '#9f7aea'}; color:white; padding:1px 3px; border-radius:3px; font-size:9px;">${tip}</span><strong>${res}h</strong> [${it.codigo}] ${cursoSinCiclo}`;
 
             d.ondragstart = (e) => {
                 e.dataTransfer.setData("info", JSON.stringify({
@@ -1582,8 +1585,9 @@
                     const bloques = dataCiclo[key] || [];
                     html += `<td><div class="diagonal-container">` + bloques.map(inf => {
                         const nombreFin = obtenerDocenteActualizado(inf.codigo, inf.subTipo, inf.docente);
+                        const cursoSinCiclo = inf.curso.replace(/^\[C-[IXV\?]+\]\s*/i, '');
                         const isCompact = bloques.length > 1 ? ' small-text' : '';
-                        return `<div class="dropped-course${isCompact}" style="background-color:${getColorPorDocente(nombreFin)}"><strong>${inf.curso}</strong><span class="docente-name-cell">${nombreFin}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span></div>`;
+                        return `<div class="dropped-course${isCompact}" style="background-color:${getColorPorDocente(nombreFin)}"><strong>[${inf.codigo}] ${cursoSinCiclo}</strong><span class="docente-name-cell">${nombreFin}</span><span class="tag-tipo ${inf.subTipo === 'HT' ? 'tag-ht' : 'tag-hp'}">${inf.subTipo}</span></div>`;
                     }).join("") + `</div></td>`;
                 }
                 html += `</tr>`;
@@ -1733,7 +1737,8 @@
                                     if (blocks.length === 0) return;
                                     const cellText = blocks.map(b => {
                                         const docenteName = obtenerDocenteActualizado(b.codigo, b.subTipo, b.docente);
-                                        return `${b.curso}\n${docenteName} (${b.subTipo})`;
+                                        const cursoSinCiclo = b.curso.replace(/^\[C-[IXV\?]+\]\s*/i, '');
+                                        return `[${b.codigo}] ${cursoSinCiclo}\n${docenteName} (${b.subTipo})`;
                                     }).join("\n\n");
 
                                     const firstDocente = obtenerDocenteActualizado(blocks[0].codigo, blocks[0].subTipo, blocks[0].docente);
@@ -1900,16 +1905,21 @@
 
         async function cargarHorariosGuardados() {
             try {
-                const doc = await db.collection("planificacion").doc("horarios").get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    horariosPorCiclo = data.horariosGeneral || {};
-                    // Recalcular cache de horas usadas
-                    reconstruirCacheHoras();
-                    renderBloquesEnTabla();
-                }
+                // Sincronización en TIEMPO REAL
+                db.collection("planificacion").doc("horarios").onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        horariosPorCiclo = data.horariosGeneral || {};
+                        // Recalcular cache de horas usadas
+                        reconstruirCacheHoras();
+                        renderBloquesEnTabla();
+                        console.log("Horario actualizado en tiempo real.");
+                    }
+                }, (err) => {
+                    console.error("Error en realtime listener de horarios:", err);
+                });
             } catch (e) {
-                console.error("Error loading horarios:", e);
+                console.error("Error iniciando listener de horarios:", e);
             }
         }
 

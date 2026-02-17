@@ -406,8 +406,16 @@
         let cacheDemanda = {};
 
         window.onload = async () => {
-            const hor = await db.collection("planificacion").doc("horarios").get();
-            if (hor.exists) horariosData = hor.data().horariosGeneral || {};
+            // Escuchar Horarios en TIEMPO REAL
+            db.collection("planificacion").doc("horarios").onSnapshot((doc) => {
+                if (doc.exists) {
+                    horariosData = doc.data().horariosGeneral || {};
+                    calcularDemandaGlobal();
+                    renderHorarioConCursos();
+                    console.log("Laboratorios actualizados por cambio en horarios.");
+                }
+            });
+
             const labs = await db.collection("planificacion").doc("config_laboratorios").get();
             if (labs.exists) laboratorios = labs.data().lista || [];
             const config = await db.collection("planificacion").doc("config_general").get();
@@ -415,8 +423,7 @@
             const reglas = await db.collection("planificacion").doc("config_reglas").get();
             if (reglas.exists) reglasAsignacion = reglas.data().lista || [];
 
-            calcularDemandaGlobal();
-            renderListaLabs(); renderHorarioConCursos();
+            renderListaLabs();
         };
 
         function calcularDemandaGlobal() {
