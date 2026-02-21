@@ -966,7 +966,9 @@
             // A. Suscripción a Docentes (Inmediata)
             unsubscribeDocentes = db.collection("planificacion").doc("lista_docentes")
                 .onSnapshot((doc) => {
-                    if (doc.exists) {
+                    // Solo actualizar si la data viene del servidor (sin cambios locales pendientes)
+                    // Esto evita que el renderizado remoto pise cambios que el usuario acaba de hacer
+                    if (doc.exists && !doc.metadata.hasPendingWrites) {
                         const nuevaLista = doc.data().docentes || [];
                         docentes = nuevaLista;
                         renderCursos();
@@ -1252,11 +1254,11 @@
             if (saveTimeout) clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 guardarEnBD().then(() => {
-                    showToast("Cambios guardados.", "success");
+                    // No mostramos toast de éxito en cada save silencioso para no molestar
                 }).catch(() => {
                     showToast("Error al guardar cambios.", "error");
                 });
-            }, 2000);
+            }, 500);
         }
 
         function getDocenteCardHTML(doc) {
@@ -1396,16 +1398,22 @@
             }
         }
 
-        function eliminarCursoDeDocente(docId, index) {
+        async function eliminarCursoDeDocente(docId, index) {
             const doc = docentes.find(d => d.id == docId);
             if (doc && doc.carga) {
                 const courseCode = doc.carga[index].codigo;
-                cleanScheduleForDocente(doc.nombre, courseCode); // Limpiar solo este curso
 
+                // 1. Limpieza asíncrona en horarios (en segundo plano)
+                cleanScheduleForDocente(doc.nombre, courseCode);
+
+                // 2. Modificación local inmediata
                 doc.carga.splice(index, 1);
                 updateDocenteCard(docId);
                 renderCursosDebounced();
-                scheduleSave();
+
+                // 3. Persistencia inmediata (sin debounce)
+                if (saveTimeout) clearTimeout(saveTimeout);
+                await guardarEnBD();
             }
         }
 
