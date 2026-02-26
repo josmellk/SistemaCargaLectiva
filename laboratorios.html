@@ -110,7 +110,6 @@
 
         .schedule-table {
             width: 100%;
-            /* min-width removed to allow responsiveness */
             border-collapse: collapse;
             background: white;
             border: 2px solid #000;
@@ -141,7 +140,6 @@
             background: #edf2f7;
             font-weight: bold;
             width: 8%;
-            /* Percentage width for responsiveness */
             font-size: 10px;
             color: var(--blue);
         }
@@ -156,17 +154,11 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-
-
         .lab-item-sidebar {
             color: white;
-            /* Ensure text is white on colored backgrounds */
             padding: 4px 8px;
-            /* More compact padding */
             border-radius: 6px;
-            /* Slightly less rounded for compact look */
             margin-bottom: 5px;
-            /* Less space between blocks */
             font-size: 10px;
             display: flex;
             flex-direction: column;
@@ -277,8 +269,6 @@
 
 <body>
 
-
-
     <div class="layout">
         <div class="sidebar">
             <h3><i class="fa-solid fa-flask"></i> Gestión de Laboratorios</h3>
@@ -294,21 +284,17 @@
             </div>
 
             <button class="btn-action" style="background:var(--orange);" onclick="abrirConfigReglas()"><i
-                    class="fa-solid fa-gear"></i> CONFIGURAR
-                REGLAS</button>
+                    class="fa-solid fa-gear"></i> CONFIGURAR REGLAS</button>
 
             <hr style="width: 100%; border: 0.5px solid #eee; margin: 8px 0;">
             <div id="listaLabs" style="flex-grow:1; overflow-y:auto; padding-right:5px;"></div>
 
             <button class="btn-action" style="background:var(--purple);" onclick="optimizarBloquesContinuos()"><i
-                    class="fa-solid fa-robot"></i>
-                OPTIMIZACIÓN POR BLOQUES</button>
+                    class="fa-solid fa-robot"></i> OPTIMIZACIÓN POR BLOQUES</button>
             <button class="btn-action" style="background:var(--red);" onclick="limpiarAsignaciones()"><i
-                    class="fa-solid fa-trash"></i> LIMPIAR
-                TODO</button>
+                    class="fa-solid fa-trash"></i> LIMPIAR TODO</button>
             <button class="btn-action" style="background:var(--green);" onclick="guardarAsignaciones()"><i
-                    class="fa-solid fa-floppy-disk"></i> GUARDAR
-                CAMBIOS</button>
+                    class="fa-solid fa-floppy-disk"></i> GUARDAR CAMBIOS</button>
         </div>
 
         <div class="main-content">
@@ -406,22 +392,25 @@
         let cacheDemanda = {};
 
         window.onload = async () => {
-            // Escuchar Horarios en TIEMPO REAL
+            // 1. CARGA DE DATOS ESTÁTICOS NECESARIOS PARA EL CÁLCULO
+            const labs = await db.collection("planificacion").doc("config_laboratorios").get();
+            if (labs.exists) laboratorios = labs.data().lista || [];
+
+            const config = await db.collection("planificacion").doc("config_general").get();
+            if (config.exists) censoSincronizado = config.data().censoCursos || {};
+
+            const reglas = await db.collection("planificacion").doc("config_reglas").get();
+            if (reglas.exists) reglasAsignacion = reglas.data().lista || [];
+
+            // 2. ACTIVAR EL ESCUCHADOR EN TIEMPO REAL (Ahora que ya tenemos el censo cargado)
             db.collection("planificacion").doc("horarios").onSnapshot((doc) => {
                 if (doc.exists) {
                     horariosData = doc.data().horariosGeneral || {};
-                    calcularDemandaGlobal();
+                    calcularDemandaGlobal(); // Ya no dará 0 porque censoSincronizado ya existe
                     renderHorarioConCursos();
                     console.log("Laboratorios actualizados por cambio en horarios.");
                 }
             });
-
-            const labs = await db.collection("planificacion").doc("config_laboratorios").get();
-            if (labs.exists) laboratorios = labs.data().lista || [];
-            const config = await db.collection("planificacion").doc("config_general").get();
-            if (config.exists) censoSincronizado = config.data().censoCursos || {};
-            const reglas = await db.collection("planificacion").doc("config_reglas").get();
-            if (reglas.exists) reglasAsignacion = reglas.data().lista || [];
 
             renderListaLabs();
         };
@@ -462,12 +451,10 @@
             const labNom = ev.dataTransfer.getData("text");
             const cic = document.getElementById('selCiclo').value;
 
-            // Validar capacidad compartida
             const labInfo = laboratorios.find(l => l.nombre === labNom);
-            if (!labInfo) return; // Should not happen based on drag data
+            if (!labInfo) return;
 
             let cargaActual = 0;
-            // Calcular carga actual en esa hora de TODOS los ciclos
             ciclos.forEach(c => {
                 const bloques = horariosData[c]?.[key] || [];
                 bloques.forEach(b => {
@@ -485,7 +472,6 @@
             renderHorarioConCursos();
         }
 
-        // --- REGLAS LOGIC ---
         function abrirConfigReglas() {
             document.getElementById('modalReglas').style.display = 'flex';
             renderListaReglas();
@@ -518,27 +504,24 @@
             const nombre = nombreCurso.toUpperCase();
             reglasAsignacion.forEach(r => {
                 if (nombre.includes(r.key)) {
-                    // Support comma-separated tags in rules
                     r.tag.toUpperCase().split(",").forEach(t => reqs.add(t.trim()));
                 }
             });
             return Array.from(reqs);
         }
-        // --------------------
 
         async function optimizarBloquesContinuos() {
             try {
                 if (laboratorios.length === 0) return alert("❌ No hay laboratorios registrados para asignar.");
                 if (!confirm("🤖 Optimizando... Se eliminarán asignaciones actuales y se intentará cubrir la mayor cantidad de alumnos posible.")) return;
 
-                // Limpiar asignaciones
                 ciclos.forEach(c => { if (horariosData[c]) Object.keys(horariosData[c]).forEach(k => { horariosData[c][k].forEach(b => b.lab = ""); }); });
 
                 const labsDesc = [...laboratorios].sort((a, b) => b.capacidad - a.capacidad);
                 const ocupacion = {};
-                const usageHistory = {}; // key = "Codigo-Docente", value = HorasAsignadas
-                let failedAssignments = []; // Reporte de fallos
-                let partialAssignments = []; // Reporte de asignaciones parciales
+                const usageHistory = {};
+                let failedAssignments = [];
+                let partialAssignments = [];
 
                 const getCargaActual = (labNombre, h, d) => {
                     const key = `${h}-${d}`;
@@ -554,7 +537,7 @@
                 };
 
                 const estaLibre = (lab, bloqueH, dia) => {
-                    return bloqueH.every(h => getCargaActual(lab.nombre, h, dia) === 0); // Asumiendo exclusividad por bloque para simplificar
+                    return bloqueH.every(h => getCargaActual(lab.nombre, h, dia) === 0);
                 };
 
                 const registrarOcupacion = (lab, bloqueH, dia, demanda) => {
@@ -567,11 +550,9 @@
 
                 let asignados = 0;
                 let sinLaboratorio = 0;
-                let specializedCount = 0;
 
                 for (let d = 1; d <= 6; d++) {
                     let gruposDia = [];
-
                     ciclos.forEach(cic => {
                         const dataCiclo = horariosData[cic] || {};
                         for (let h = 0; h < horas.length; h++) {
@@ -615,19 +596,13 @@
                             const nombreCurso = first.inst.course || first.inst.curso || "";
                             let reqTags = obtenerRequisitos(nombreCurso);
 
-                            // EXCLUSIÓN DE OTRAS ESCUELAS
                             const upperName = nombreCurso.toUpperCase();
-                            if (upperName.includes("EPE") || upperName.includes("EPIC") || upperName.includes("EPMEA") || upperName.includes("EPP")) {
-                                console.log(`Skipping external school course: ${nombreCurso}`);
-                                continue;
-                            }
-
+                            if (upperName.includes("EPE") || upperName.includes("EPIC") || upperName.includes("EPMEA") || upperName.includes("EPP")) continue;
                             if (upperName.includes("ELÉCTRIC") || upperName.includes("ELECTIR") || upperName.includes("ELECTRO")) {
                                 if (!reqTags.includes("ELECTRONICA")) reqTags.push("ELECTRONICA");
                             }
 
                             const usageKey = `${first.inst.codigo}-${first.inst.docente}`;
-
                             requerimientos.push({
                                 demanda: obtenerDemandaReal(first.inst.codigo),
                                 items: subBlock,
@@ -643,85 +618,53 @@
                     requerimientos.sort((a, b) => {
                         const aTags = a.reqTags.length > 0;
                         const bTags = b.reqTags.length > 0;
-                        if (aTags && bTags) return a.history - b.history; // Rotación si ambos son especializados
-                        if (aTags !== bTags) return aTags ? -1 : 1; // Prioridad a los que tienen tags REQUERIDOS
-                        return b.demanda - a.demanda; // Luego por demanda
+                        if (aTags && bTags) return a.history - b.history;
+                        if (aTags !== bTags) return aTags ? -1 : 1;
+                        return b.demanda - a.demanda;
                     });
 
-                    // 4. Asignar
                     requerimientos.forEach(req => {
-                        // 1. Filtrar solo labs libres en horario
                         const libresDeHorario = labsDesc.filter(l => estaLibre(l, req.horas, d));
-
                         let matchFound = false;
                         const horasYaAsignadas = usageHistory[req.usageKey] || 0;
 
-                        // 2. BUSQUEDA ESPECIALIZADA (Tag Match)
                         if (req.reqTags.length > 0) {
-                            // Intentar primero con tags
                             const candidatosTag = libresDeHorario.filter(l => {
                                 const lTags = (l.tags || "").toUpperCase();
                                 return req.reqTags.some(rt => lTags.includes(rt));
                             });
-
-                            // Primero intentar Capability FULL
                             let candidates = candidatosTag.filter(l => tieneCapacidad(l, req.horas, d, req.demanda));
-
-                            // Si no hay con capacidad full, intentar Best Effort dentro de los especializados
-                            // (Solo si el 'best effort' es razonable, e.g. > 50% de la demanda? Por ahora tomamos el mayor)
                             if (candidates.length === 0 && candidatosTag.length > 0) {
-                                candidates = [...candidatosTag].sort((a, b) => b.capacidad - a.capacidad); // Mayor capacidad primero
+                                candidates = [...candidatosTag].sort((a, b) => b.capacidad - a.capacidad);
                             } else if (candidates.length > 0) {
-                                candidates.sort((a, b) => a.capacidad - b.capacidad); // Menor capacidad que cumpla (Best Fit)
+                                candidates.sort((a, b) => a.capacidad - b.capacidad);
                             }
 
                             if (candidates.length > 0) {
                                 const lab = candidates[0];
                                 const isPartial = lab.capacidad < req.demanda;
-
                                 registrarOcupacion(lab, req.horas, d, req.demanda);
                                 req.items.forEach(item => { horariosData[item.cic][`${item.h}-${d}`][item.idxInBlock].lab = lab.nombre; });
-
                                 asignados++;
                                 usageHistory[req.usageKey] = horasYaAsignadas + req.horas.length;
                                 matchFound = true;
-                                specializedCount++;
-
                                 if (isPartial) partialAssignments.push({ curso: req.nombreCurso, lab: lab.nombre, cap: lab.capacidad, dem: req.demanda });
                             }
                         }
 
-                        // 3. BUSQUEDA GENERAL (Si no se asignó por especialidad)
                         if (!matchFound) {
-                            // Estrategia:
-                            // 1. Buscar capacidad TOTAL (demand <= cap)
-                            // 2. Si falla, buscar capacidad PARCIAL (Best Effort: El mas grande disponible)
-
-                            // Filtrar candidatos libres. 
-                            // NOTA: libresDeHorario ya filtra por disponibilidad horaria.
-                            // Ordenar preferencias: 
-                            //  - Labs SIN tags preferidos (para dejar los especializados libres)
-                            //  - Capacidad suficiente
-
-                            // Separar en "Con Capacidad Suficiente" y "Insuficiente"
                             const suficiente = libresDeHorario.filter(l => l.capacidad >= req.demanda);
                             const insuficiente = libresDeHorario.filter(l => l.capacidad < req.demanda);
-
                             let lab = null;
-
                             if (suficiente.length > 0) {
-                                // Preferir labs que NO tengan tags coincidentes innecesarios (reservar especializados)
-                                // Pero si no hay otra opción, usarlos.
-                                sufficiente = suficiente.sort((a, b) => {
-                                    // Priorizar el que NO tiene tags (general)
+                                let tempSuf = suficiente.sort((a, b) => {
                                     const aGen = (!a.tags || a.tags.length < 3);
                                     const bGen = (!b.tags || b.tags.length < 3);
                                     if (aGen !== bGen) return aGen ? -1 : 1;
-                                    return a.capacidad - b.capacidad; // Smallest Fit
+                                    return a.capacidad - b.capacidad;
                                 });
-                                lab = suficiente[0];
+                                lab = tempSuf[0];
                             } else if (insuficiente.length > 0) {
-                                // BEST EFFORT: Tomar el mas grande disponible
                                 insuficiente.sort((a, b) => b.capacidad - a.capacidad);
                                 lab = insuficiente[0];
                                 partialAssignments.push({ curso: req.nombreCurso, lab: lab.nombre, cap: lab.capacidad, dem: req.demanda });
@@ -729,47 +672,27 @@
 
                             if (lab) {
                                 registrarOcupacion(lab, req.horas, d, req.demanda);
-                                req.items.forEach(item => {
-                                    horariosData[item.cic][`${item.h}-${d}`][item.idxInBlock].lab = lab.nombre;
-                                });
+                                req.items.forEach(item => { horariosData[item.cic][`${item.h}-${d}`][item.idxInBlock].lab = lab.nombre; });
                                 asignados++;
                             } else {
                                 sinLaboratorio++;
-                                failedAssignments.push({
-                                    curso: req.nombreCurso,
-                                    demanda: req.demanda,
-                                    dia: d,
-                                    horas: req.horas
-                                });
+                                failedAssignments.push({ curso: req.nombreCurso, demanda: req.demanda, dia: d, horas: req.horas });
                             }
                         }
                     });
                 }
 
                 renderHorarioConCursos();
-
                 let msg = `✅ Optimización completada.\n\n` +
                     `- Asignados Totalmente: ${asignados - partialAssignments.length}\n` +
                     `- Asignados Parcialmente (Faltan PCs): ${partialAssignments.length}\n` +
                     `- Sin Laboratorio: ${sinLaboratorio}\n\n`;
-
-                if (partialAssignments.length > 0) {
-                    msg += `⚠️ DÉFICIT DE EQUIPOS:\n` + partialAssignments.slice(0, 5).map(p => `- ${p.curso}: ${p.cap}/${p.dem}`).join("\n") + (partialAssignments.length > 5 ? "\n..." : "") + "\n\n";
-                }
-
-                if (failedAssignments.length > 0) {
-                    msg += `❌ NO SE PUDO ASIGNAR:\n` + failedAssignments.slice(0, 5).map(f => `- ${f.curso} (${f.dem} alum) [Día ${f.dia}]`).join("\n") + (failedAssignments.length > 5 ? "\n..." : "");
-                }
-
                 alert(msg);
-
             } catch (err) {
-                console.error(err);
                 alert("❌ ERROR CRÍTICO EN OPTIMIZACIÓN:\n" + err.message);
             }
         }
 
-        // Event Delegation Setup ... (No changes here, skipping for brevity but keeping implementation logic)
         window.addEventListener('DOMContentLoaded', () => {
             const cuerpo = document.getElementById('cuerpoLab');
             cuerpo.addEventListener('dragover', (e) => { const target = e.target.closest('.course-block'); if (target) { e.preventDefault(); target.classList.add('drag-over'); } });
@@ -777,10 +700,7 @@
             cuerpo.addEventListener('drop', (e) => { e.preventDefault(); const target = e.target.closest('.course-block'); if (target) { target.classList.remove('drag-over'); onDrop(e, target.dataset.key, parseInt(target.dataset.idx)); } });
         });
 
-        const LAB_COLORS = [
-            "#e53e3e", "#38a169", "#3182ce", "#805ad5", "#d69e2e",
-            "#d53f8c", "#319795", "#dd6b20", "#00695c", "#553c9a"
-        ];
+        const LAB_COLORS = ["#e53e3e", "#38a169", "#3182ce", "#805ad5", "#d69e2e", "#d53f8c", "#319795", "#dd6b20", "#00695c", "#553c9a"];
 
         function renderHorarioConCursos() {
             const cic = document.getElementById('selCiclo').value;
@@ -798,15 +718,9 @@
                         const demanda = obtenerDemandaReal(inf.codigo);
                         const lab = laboratorios.find(l => l.nombre === inf.lab);
                         const dif = lab ? lab.capacidad - demanda : 0;
-
-                        // Determinar color
                         let labColor = "var(--purple)";
                         if (lab) {
-                            if (lab.color) labColor = lab.color;
-                            else {
-                                const idxLab = laboratorios.indexOf(lab);
-                                labColor = LAB_COLORS[idxLab % LAB_COLORS.length];
-                            }
+                            labColor = lab.color || LAB_COLORS[laboratorios.indexOf(lab) % LAB_COLORS.length];
                         }
 
                         htmlContent += `<div class="course-block" data-key="${key}" data-idx="${idx}">
@@ -831,9 +745,7 @@
             const n = document.getElementById('labNom').value.toUpperCase().trim();
             const c = document.getElementById('labCap').value;
             const t = document.getElementById('labTags').value;
-
             if (!n || !c) return alert("Faltan datos");
-
             const duplicado = laboratorios.some(l => l.nombre === n && l.id !== labEditandoId);
             if (duplicado) return alert("🚫 Ya existe un laboratorio con ese nombre.");
 
@@ -843,7 +755,6 @@
                     laboratorios[idx].nombre = n;
                     laboratorios[idx].capacidad = parseInt(c);
                     laboratorios[idx].tags = t.toUpperCase();
-                    // Keep existing color or assign if missing
                     if (!laboratorios[idx].color) laboratorios[idx].color = LAB_COLORS[idx % LAB_COLORS.length];
                 }
                 cancelarEdicion();
@@ -851,7 +762,6 @@
                 const color = LAB_COLORS[laboratorios.length % LAB_COLORS.length];
                 laboratorios.push({ id: Date.now(), nombre: n, capacidad: parseInt(c), tags: t, color: color });
             }
-
             renderListaLabs();
             document.getElementById('labNom').value = ""; document.getElementById('labCap').value = ""; document.getElementById('labTags').value = "";
             await db.collection("planificacion").doc("config_laboratorios").set({ lista: laboratorios });
@@ -864,7 +774,6 @@
             document.getElementById('labNom').value = lab.nombre;
             document.getElementById('labCap').value = lab.capacidad;
             document.getElementById('labTags').value = lab.tags || "";
-
             const btn = document.getElementById('btnAgregarLab');
             btn.innerHTML = "<i class='fa-solid fa-floppy-disk'></i> GUARDAR CAMBIOS LAB";
             btn.style.background = "#2b6cb0";
@@ -873,10 +782,7 @@
 
         function cancelarEdicion() {
             labEditandoId = null;
-            document.getElementById('labNom').value = "";
-            document.getElementById('labCap').value = "";
-            document.getElementById('labTags').value = "";
-
+            document.getElementById('labNom').value = ""; document.getElementById('labCap').value = ""; document.getElementById('labTags').value = "";
             const btn = document.getElementById('btnAgregarLab');
             btn.innerText = "+ REGISTRAR LABORATORIO";
             btn.style.background = "var(--blue)";
@@ -889,19 +795,13 @@
                 const bgColor = l.color || LAB_COLORS[i % LAB_COLORS.length];
                 return `
                 <div class="lab-item-sidebar" style="background:${bgColor};" draggable="true" ondragstart="onDragStart(event, '${l.nombre}')">
-                    
-                    <!-- Encabezado: Nombre y Capacidad separados -->
                      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:3px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">
                           <strong style="font-size:11px; line-height:1.2; padding-right:4px; color:white; font-weight:900;">${l.nombre}</strong>
                           <span style="background:rgba(255,255,255,0.2); padding:1px 4px; border-radius:3px; font-size:9px; white-space:nowrap; font-weight:900; color:white; border:1px solid rgba(255,255,255,0.3);">${l.capacidad} PCs</span>
                      </div>
-
-                    <!-- Tags: Con mejor espaciado y legibilidad -->
                     <div style="font-size:8.5px; color:rgba(255,255,255,0.95); margin-bottom:4px; line-height:1.2; word-wrap:break-word;">
                         ${l.tags ? '<i class="fa-solid fa-tag"></i> ' + l.tags : '<span style="opacity:0.6; font-style:italic;">(Sin tags)</span>'}
                     </div>
-
-                    <!-- Botones: Alineados al final -->
                     <div style="display:flex; gap:5px; justify-content:flex-end; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:2px;">
                         <button onclick="prepararEdicion(${l.id})" style="background:transparent; border:none; color:white; cursor:pointer; font-size:10px; opacity:0.8;" title="Editar"><i class="fa-solid fa-pen"></i></button>
                         <button onclick="borrarLab(${l.id})" style="background:transparent; border:none; color:white; cursor:pointer; font-size:10px; opacity:0.8;" title="Borrar"><i class="fa-solid fa-trash"></i></button>
