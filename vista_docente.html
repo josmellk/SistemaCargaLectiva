@@ -220,10 +220,12 @@
             .view-container {
                 overflow: visible;
                 padding: 0;
-                display: none;
+                display: block;
             }
 
-            /* Hide default view */
+            body.printing-all .view-container {
+                display: none;
+            }
 
             body {
                 background: white;
@@ -303,6 +305,16 @@
                 display: block !important;
             }
 
+            .print-only-title {
+                display: block !important;
+                text-align: center;
+                color: #5D0E16;
+                margin-bottom: 5px;
+                font-size: 16px;
+                border-bottom: 2px solid #5D0E16;
+                padding-bottom: 5px;
+            }
+
             .print-page {
                 page-break-after: always;
                 page-break-inside: avoid;
@@ -323,6 +335,14 @@
             .print-page:last-child {
                 page-break-after: auto;
             }
+
+            .print-only-title {
+                display: none;
+            }
+        }
+
+        .print-only-title {
+            display: none;
         }
     </style>
 </head>
@@ -350,6 +370,7 @@
     <div id="bulkPrintContainer"></div>
 
     <div class="view-container">
+        <div id="printTitle" class="print-only-title"></div>
         <table id="tablaDocente" class="schedule-table">
             <thead>
                 <tr>
@@ -438,12 +459,14 @@
             const cuerpo = document.getElementById('cuerpoDocente');
             cuerpo.innerHTML = "";
 
-            if (!docenteElegido) {
+            const titleEl = document.getElementById('printTitle');
+            if (docenteElegido) {
+                titleEl.textContent = docenteElegido;
+                cuerpo.innerHTML = generateScheduleRows(docenteElegido);
+            } else {
+                titleEl.textContent = "";
                 cuerpo.innerHTML = `<tr><td colspan="7" style="padding:40px; color:#ccc; text-align:center;">Seleccione un docente para visualizar su horario.</td></tr>`;
-                return;
             }
-
-            cuerpo.innerHTML = generateScheduleRows(docenteElegido);
         }
 
         function generateScheduleRows(nombreDocente) {
