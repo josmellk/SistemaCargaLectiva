@@ -1302,22 +1302,49 @@
             const colDocente = getColorPorDocente(doc.nombre);
             const fragment = document.createDocumentFragment();
 
+            const cursosAgrupados = {};
+
             doc.carga.forEach(item => {
                 const cM = malla.find(m => m["CÓD.ASIG."]?.toString().trim() === item.codigo.toString().trim());
 
                 if (cM && cM["CICLO"] === cicFil) {
-
-                    // USO DE CACHE O(1)
-                    const htUsadas = hoursCache.get(`${doc.nombre}|${item.codigo}|HT`) || 0;
-                    const hpUsadas = hoursCache.get(`${doc.nombre}|${item.codigo}|HP`) || 0;
-
-                    const htR = (parseInt(cM["HT"]) || 0) - htUsadas;
-                    const hpR = (parseInt(cM["HP"]) || 0) - hpUsadas;
-
-                    if (item.tipo === 'FULL' && htR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HT', htR, colDocente);
-                    if (hpR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HP', hpR, colDocente);
+                    const code = item.codigo;
+                    if (!cursosAgrupados[code]) {
+                        cursosAgrupados[code] = {
+                            itemOriginal: item,
+                            cM: cM,
+                            totalHT: 0,
+                            totalHP: 0
+                        };
+                    }
+                    if (item.tipo === 'FULL') {
+                        cursosAgrupados[code].totalHT += (parseInt(cM["HT"]) || 0);
+                        cursosAgrupados[code].totalHP += (parseInt(cM["HP"]) || 0);
+                    } else if (item.tipo === 'HP') {
+                        cursosAgrupados[code].totalHP += (parseInt(cM["HP"]) || 0);
+                    } else {
+                        // Respaldo por si hay otros tipos
+                        cursosAgrupados[code].totalHT += (item.ht || 0);
+                        cursosAgrupados[code].totalHP += (item.hp || 0);
+                    }
                 }
             });
+
+            Object.values(cursosAgrupados).forEach(grupo => {
+                const item = grupo.itemOriginal;
+                const code = item.codigo;
+
+                // USO DE CACHE O(1)
+                const htUsadas = hoursCache.get(`${doc.nombre}|${code}|HT`) || 0;
+                const hpUsadas = hoursCache.get(`${doc.nombre}|${code}|HP`) || 0;
+
+                const htR = grupo.totalHT - htUsadas;
+                const hpR = grupo.totalHP - hpUsadas;
+
+                if (htR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HT', htR, colDocente);
+                if (hpR > 0) crearItemArrastre(fragment, item, doc.nombre, 'HP', hpR, colDocente);
+            });
+
             container.appendChild(fragment);
         }
 
