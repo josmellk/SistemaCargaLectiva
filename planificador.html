@@ -729,12 +729,26 @@
                     // Procesar datos
                     notas = {}; let sums = {};
                     data.forEach(r => {
-                        let codigo = clean(r["CÓD.ASIG."] || "");
-                        let ciclo = (r["CICLO"] || "").toString().trim();
-                        let colM = Object.keys(r).find(k => k.includes("TOTAL") && k.includes("MATRI"));
+                        let keys = Object.keys(r);
+                        let colCod = keys.find(k => k.toUpperCase().includes("CÓD") && k.toUpperCase().includes("ASIG"));
+                        let colCic = keys.find(k => k.toUpperCase().includes("CICLO"));
+                        let colApr = keys.find(k => k.toUpperCase().includes("APROB"));
+                        let colDes = keys.find(k => k.toUpperCase().includes("DESAPR"));
+                        let colMat = keys.find(k => (k.toUpperCase().includes("TOTAL") && k.toUpperCase().includes("MATRI")) || k.toUpperCase().includes("MATRICULADOS"));
+
+                        let codigo = clean(r[colCod || "CÓD.ASIG."] || "");
+                        let ciclo = (r[colCic || "CICLO"] || "").toString().trim();
+                        
                         if (codigo) {
-                            notas[codigo] = { a: parseInt(r["APROB."] || 0), d: parseInt(r["DESAPR."] || 0) };
-                            if (ciclo && r[colM]) { if (!sums[ciclo]) sums[ciclo] = []; sums[ciclo].push(parseInt(r[colM])); }
+                            let aVal = parseInt(r[colApr] || 0);
+                            let dVal = parseInt(r[colDes] || 0);
+                            let mVal = parseInt(r[colMat] || 0);
+
+                            notas[codigo] = { a: aVal, d: dVal, m: mVal };
+                            if (ciclo && mVal > 0) { 
+                                if (!sums[ciclo]) sums[ciclo] = []; 
+                                sums[ciclo].push(mVal); 
+                            }
                         }
                     });
                     for (let cic in sums) avgCiclo[cic] = Math.round(sums[cic].reduce((a, b) => a + b, 0) / sums[cic].length);
@@ -810,12 +824,25 @@
                 grupos.forEach(g => {
                     let cP = g.cursos[0], cicA = cP["CICLO"];
                     let base = 0, req = clean(cP["REQUE"] || "");
-                    if (notas[req]) base = notas[req].a;
-                    else if (ROMANOS.indexOf(cicA) === 1) base = nIng;
-                    else base = avgCiclo[ROMANOS[ROMANOS.indexOf(cicA) - 1]] || 0;
-
+                    
                     let rep = g.cursos.reduce((acc, cur) => acc + (notas[clean(cur["CÓD.ASIG."] || "")] ? notas[clean(cur["CÓD.ASIG."] || "")].d : 0), 0);
-                    let total = base + rep; totalEstudiantes += total;
+                    
+                    // Prioridad: Si existe el Total de Matriculados en el Excel para este grupo de cursos
+                    let totalMatriExcel = g.cursos.reduce((acc, cur) => acc + (notas[clean(cur["CÓD.ASIG."] || "")] ? (notas[clean(cur["CÓD.ASIG."] || "")].m || 0) : 0), 0);
+
+                    let total = 0;
+                    if (totalMatriExcel > 0) {
+                        total = totalMatriExcel;
+                        base = total - rep; // Calculamos la base para que cuadre en la tabla
+                    } else {
+                        // Fallback: Lógica Predictiva
+                        if (notas[req]) base = notas[req].a;
+                        else if (ROMANOS.indexOf(cicA) === 1) base = nIng;
+                        else base = avgCiclo[ROMANOS[ROMANOS.indexOf(cicA) - 1]] || 0;
+                        total = base + rep;
+                    }
+
+                    totalEstudiantes += total;
                     let htSum = g.cursos.reduce((acc, c) => acc + (parseInt(c["HT"]) || 0), 0);
                     let hpSum = g.cursos.reduce((acc, c) => acc + (parseInt(c["HP"]) || 0), 0);
 
@@ -823,15 +850,26 @@
                     g.cursos.forEach(cur => {
                         const cod = clean(cur["CÓD.ASIG."] || "");
                         const repCurso = notas[cod] ? notas[cod].d : 0;
+                        
+                        // Determinar total individual si hay data en Excel
+                        let totalInd = 0, baseInd = 0;
+                        if (notas[cod] && notas[cod].m > 0) {
+                            totalInd = notas[cod].m;
+                            baseInd = totalInd - repCurso;
+                        } else {
+                            baseInd = base; // Usa la base calculada del grupo
+                            totalInd = baseInd + repCurso;
+                        }
+
                         censoCursos[cod] = {
                             ciclo: cicA,
                             curso: cur["CURSO"],
                             ht: parseInt(cur["HT"]) || 0,
                             hp: parseInt(cur["HP"]) || 0,
                             th: (parseInt(cur["HT"]) || 0) + (parseInt(cur["HP"]) || 0),
-                            base: base,
+                            base: baseInd,
                             rep: repCurso,
-                            total: base + repCurso
+                            total: totalInd
                         };
                     });
 

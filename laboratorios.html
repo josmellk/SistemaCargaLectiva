@@ -391,6 +391,9 @@
         const ciclos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
         let cacheDemanda = {};
 
+        const clean = (t) => t ? t.toString().replace(/[^a-zA-Z0-9]/g, "").trim() : "";
+        const cleanNombre = (t) => t ? t.toString().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+
         window.onload = async () => {
             // 1. CARGA DE DATOS ESTÁTICOS NECESARIOS PARA EL CÁLCULO
             const labs = await db.collection("planificacion").doc("config_laboratorios").get();
@@ -424,22 +427,24 @@
                 Object.values(data).forEach(bloque => {
                     bloque.forEach(ins => {
                         if (ins.subTipo === "HP") {
-                            if (!cursoDocentes[ins.codigo]) cursoDocentes[ins.codigo] = new Set();
-                            cursoDocentes[ins.codigo].add(ins.docente);
+                            const codLimpio = clean(ins.codigo);
+                            if (!cursoDocentes[codLimpio]) cursoDocentes[codLimpio] = new Set();
+                            cursoDocentes[codLimpio].add(ins.docente);
                         }
                     });
                 });
             });
 
-            Object.keys(censoSincronizado).forEach(cod => {
-                const total = censoSincronizado[cod]?.total || 0;
+            Object.keys(censoSincronizado).forEach(codRaw => {
+                const cod = clean(codRaw);
+                const total = censoSincronizado[codRaw]?.total || 0;
                 const numDocentes = cursoDocentes[cod] ? cursoDocentes[cod].size : 1;
                 cacheDemanda[cod] = numDocentes > 1 ? Math.ceil(total / 2) : total;
             });
         }
 
         function obtenerDemandaReal(codigoCurso) {
-            return cacheDemanda[codigoCurso] || 0;
+            return cacheDemanda[clean(codigoCurso)] || 0;
         }
 
         function onDragStart(ev, labNombre) { ev.dataTransfer.setData("text", labNombre); }
